@@ -1,0 +1,17 @@
+MANIFEST
+Changes
+FakeDD.pm
+FakeDD.pod
+Makefile.PL
+
+t/add.t
+t/assign.t
+t/cmp.t
+t/div.t
+t/mul.t
+t/new.t
+t/overload.t
+t/sqrt.t
+t/stringify.t
+t/sub.t
+t/validate.t
