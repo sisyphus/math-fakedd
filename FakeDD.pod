@@ -1,0 +1,167 @@
+
+=pod
+
+=head1 NAME
+
+   Math::FakeDD - DoubleDouble precision arithmetic for all architectures
+
+=head1 DEPENDENCIES
+
+   This module needs Math::MPFR, which in turn requires the GMP and MPFR
+   C libraries.
+
+   The GMP library is available from  : https://gmplib.org
+   The MPFR library is available from : https://www.mpfr.org
+
+   See the introductory explanation of "DoubleDouble" arithmetic in the
+   "Double-double arithmetic" section of:
+   https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format
+
+=head1 DESCRIPTION
+
+   Perform DoubleDouble arithmetic operations on all architectures and
+   perl configurations.
+
+=head1 SYNOPSIS
+   use Math::FakeDD qw(:all
+   my $obj = Math::FakeDD->new('0.1');
+   print $obj; # Outputs [0.1 -5.551115123125783e-18] irrespective of
+               # perl's NV type.
+
+   my $obj =  Math::FakeDD->new(0.1);
+   print $obj; # Outputs [0.1 0.0] if NV type is 'double'.
+               # Outputs [0.1 -5.549759870410176e-18] if NV type is
+               # extended precision 80-bit long double.
+               # Otherwise outputs [0.1 -5.551115123125783e-18], same
+               # as for string arg of '0.1'.
+
+   NOTES: In the following documentation:
+
+     "$arg", "$arg1", "$arg2", etc. are arguments that can be either a
+     string (perl PV), a native perl numeric type (NV or IV or UV), or
+     a Math::FakeDD object. Where  these "$arg*" arguments are not
+     Math::FakeDD objects, they are first converted, with as little
+     loss of information as possible, to a Math::FakeDD object prior to
+     the arithmetical operation. That arithmetical operation is then
+     also conducted such that information loss is minimized to the
+     greatest extent possible, within the limitations of the
+     "DoubleDouble" data type. In that "arithmetical operation", values
+     will first be rounded to 2098 bits, then rounded again as needed
+     to
+     fit inside the DoubleDouble format. To that extent, the ULP (aka
+     "Unit in Last Place") can be affected by double-rounding.
+
+     "$obj" is a Math::FakeDD object.
+
+=head1 ASSIGNMENT FUNCTIONS
+
+   $obj = Math::FakeDD->new($arg); # $arg is optional here.
+   $obj = Math::FakeDD::new($arg); # $arg is optional here.
+
+    Returns a Math::FakeDD object with the value represented by $arg,
+    or zero if no argument is provided.
+
+   dd_assign($obj, $arg);
+
+    Assigns the value represented by $arg, to the Math::FakeDD object.
+
+=head1 ARITHMETIC FUNCTIONS
+
+    $obj = dd_add($arg1, $arg2);
+    $obj = dd_sub($arg1, $arg2);
+    $obj = dd_mul($arg1, $arg2);
+    $obj = dd_div($arg1, $arg2);
+
+     Returns a Math::FakeDD object with the value of $arg1
+     (respectively) plus, minus, multiplied by or divided by $arg2.
+
+    dd_add($obj, $arg);
+    dd_sub($obj, $arg);
+    dd_mul($obj, $arg);
+    dd_div($obj, $arg);
+
+     The value in $obj is (respectively) incremented, decremented,
+     multiplied or divided by $arg.
+
+    $obj = dd_pow($arg1, $arg2);
+
+     Return a Math::FakeDD object that contains $arg1 ** $arg2.
+
+    dd_pow_eq($obj, $arg);
+
+     The value held in $obj is raised to the power of $arg.
+     (That is, $obj = $obj ** $arg.)
+
+    $obj = dd_abs($arg);
+
+     Return a Math::FakeDD object containing the absolute value
+     of $arg.
+
+    $obj = dd_int($arg);
+
+     Return a Math::FakeDD object containing the truncated
+     (integer) value of $arg.
+
+=head1 EXPONENTIATION FUNCTIONS
+
+    $obj = dd_exp($arg);
+
+     Return a Math::FakeDD object that contains e ** $arg.
+
+    $obj = dd_log($arg);
+
+     Return a Math::FakeDD object that contains the natural
+     logarithm of $arg.
+
+=head1 TRIGONOMETRY FUNCTIONS
+
+    $obj = dd_cos($arg);
+
+     Return a Math::FakeDD object that contains cos($arg).
+
+    $obj = dd_sin($arg);
+
+     Return a Math::FakeDD object that contains sin($arg).
+
+=head1 OUTPUT FUNCTIONS
+
+    $str = dd_stringify($obj);
+
+     Return a string that begins with "[" and ends with "]".
+     In between show, a space-delimited decimal string
+     representation of the more significant double followed by
+     the less significant double. Both doubles  will be shown
+     in as few digits as possible, while not losing any
+     information. The overloading of interpolation uses this
+     function.
+
+    $str = dd_repro($obj); # "repro" short for "reproducible"
+
+     Display the value of $obj in scientific notation, using
+     as few decimal mantissa digits as possible. If this $str
+     is assigned to a new Math::FakeDD object, then the new
+     Math::FakeDD object will be identical to the Math::FakeDD
+     object from which this $str was derived.
+
+    $str = dd_dec($obj); # "dec" short for "decimalize"
+
+     Display the exact value of $obj in scientific notation,
+     using as many digits as required to provide that exactness.
+     As with dd_repro(), if this $str is assigned to a new
+     Math::FakeDD object, then the new Math::FakeDD object will
+     be identical to the Math::FakeDD object from which this
+     $str was derived. However, the number of mantissa digits
+     returned by dd_dec() will be >= (usually greater than) the
+     number of mantissa digits returned by dd_repro.
+
+=head1 LICENSE
+
+  This program is free software; you may redistribute it and/or
+  modify it under the same terms as Perl itself.
+  Copyright 2022, Sisyphus
+
+=head1 AUTHOR
+
+  Sisyphus <sisyphus at(@) cpan dot (.) org>
+
+=cut
