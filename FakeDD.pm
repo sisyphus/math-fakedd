@@ -78,11 +78,23 @@ sub new {
 
 sub dd_abs {
   my $obj;
-  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
-  else {
-    $obj = Math::FakeDD->new(shift);
-  }
   my $ret = Math::FakeDD->new();
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $obj = shift;
+    if($obj->{msd} < 0) {
+      $ret->{msd} = -$obj->{msd};
+      $ret->{lsd} = -$obj->{lsd};
+    }
+    else {
+      $ret->{msd} = $obj->{msd};
+      $ret->{lsd} = $obj->{lsd};
+    }
+
+    return $ret;
+  }
+
+  $obj = Math::FakeDD->new(shift);
   my $mpfr = abs(dd2mpfr($obj)); # "abs" is "Math::MPFR::overload_abs"
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
@@ -327,13 +339,18 @@ sub dd_gte {
 }
 
 sub dd_int {
+  # Don't fall for the idea that we can just do int(msd), int(lsd)
+  # when $_[0] is a Math::FakeDD object. I tried that and it doesn't
+  # work when, eg, the Math::FakeDD object has been assigned a (string)
+  # value of "0.59943243884210417e16".
+
   my $obj;
   if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
   else {
     $obj = Math::FakeDD->new(shift);
   }
   my $ret = Math::FakeDD->new();
-  my $mpfr = int(dd2mpfr($obj)); # "jnt" is "Math::MPFR::overload_int"
+  my $mpfr = int(dd2mpfr($obj)); # "int" is "Math::MPFR::overload_int"
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
@@ -511,6 +528,12 @@ sub dd_pow_eq {
   dd_assign($_[0], mpfr2dd($rop1 ** $rop2)); # "**" is "Math::MPFR::overload_pow".
 }
 
+sub dd_repro {
+  die "Wrong arg given to dd_repro()"
+    unless ref($_[0]) eq 'Math::FakeDD';
+  return mpfrtoa(dd2mpfr(shift));
+}
+
 sub dd_sin {
   my $obj;
   if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
@@ -523,12 +546,6 @@ sub dd_sin {
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
   return $ret;
-}
-
-sub dd_repro {
-  die "Wrong arg given to dd_repro()"
-    unless ref($_[0]) eq 'Math::FakeDD';
-  return mpfrtoa(dd2mpfr(shift));
 }
 
 sub dd_spaceship {
@@ -638,12 +655,16 @@ sub dd2mpfr {
 }
 
 sub mpfr2dd {
+  my %h;
   my $mpfr = Math::MPFR->new(shift);
   my $msd = Rmpfr_get_d($mpfr, MPFR_RNDN);
-  if($msd == 0 || $msd != $msd || $msd / $msd != 1) {return ($msd, 0.0)} # $msd is zero, nan, or inf.
+  if($msd == 0 || $msd != $msd || $msd / $msd != 1) { # $msd is zero, nan, or inf.
+    $h{msd} = $msd;
+    $h{lsd} = 0;
+    return bless(\%h);
+  }
   $mpfr -= $msd;
   my $lsd = Rmpfr_get_d($mpfr, MPFR_RNDN);
-  my %h;
   $h{msd} = $msd;
   $h{lsd} = $lsd;
   return bless(\%h);
