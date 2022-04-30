@@ -112,7 +112,7 @@ sub dd_add {
     $rop2 = Math::MPFR->new(shift);
   }
 
-  return mpfr2dd($rop1 + $rop2); # "+" is "Math::MPFR::overload_add" 
+  return mpfr2dd($rop1 + $rop2); # "+" is "Math::MPFR::overload_add"
 
 }
 
@@ -141,7 +141,7 @@ sub dd_add_eq {
   if(@_ > 2) {
     # dd_add_eq() has been called via
     # Math::FakeDD overloading of '+='.
-    return mpfr2dd($rop1 + $rop2);          # "+" is "Math::MPFR::overload_add". 
+    return mpfr2dd($rop1 + $rop2);          # "+" is "Math::MPFR::overload_add".
   }
 
   dd_assign($_[0], mpfr2dd($rop1 + $rop2)); # "+" is "Math::MPFR::overload_add".
@@ -237,7 +237,7 @@ sub dd_div {
   if(@_ && $_[0]) { # switch args
     return mpfr2dd($rop2 / $rop1); # "/" is "Math::MPFR::overload_div"
   }
-  return mpfr2dd($rop1 / $rop2);   # "/" is "Math::MPFR::overload_div" 
+  return mpfr2dd($rop1 / $rop2);   # "/" is "Math::MPFR::overload_div"
 
 }
 
@@ -266,9 +266,9 @@ sub dd_div_eq {
   if(@_ > 2) {
     # dd_div_eq() has been called via
     # Math::FakeDD overloading of '/='.
-    return mpfr2dd($rop1 / $rop2);          # "/" is "Math::MPFR::overload_div". 
+    return mpfr2dd($rop1 / $rop2);          # "/" is "Math::MPFR::overload_div".
   }
-  dd_assign($_[0], mpfr2dd($rop1 / $rop2)); # "/" is "Math::MPFR::overload_div" 
+  dd_assign($_[0], mpfr2dd($rop1 / $rop2)); # "/" is "Math::MPFR::overload_div"
 
 }
 
@@ -406,7 +406,7 @@ sub dd_mul {
     $rop2 = Math::MPFR->new(shift);
   }
 
-  return mpfr2dd($rop1 * $rop2); # "*" is "Math::MPFR::overload_mul" 
+  return mpfr2dd($rop1 * $rop2); # "*" is "Math::MPFR::overload_mul"
 
 }
 
@@ -435,7 +435,7 @@ sub dd_mul_eq {
   if(@_ > 2) {
     # dd_mul_eq() has been called via
     # Math::FakeDD overloading of '*='.
-    return mpfr2dd($rop1 * $rop2);          # "*" is "Math::MPFR::overload_mul". 
+    return mpfr2dd($rop1 * $rop2);          # "*" is "Math::MPFR::overload_mul".
   }
 
   dd_assign($_[0], mpfr2dd($rop1 * $rop2)); # "*" is "Math::MPFR::overload_mul".
@@ -476,7 +476,7 @@ sub dd_pow {
   if(@_ && $_[0]) { # switch args
     return mpfr2dd($rop2 ** $rop1); # "**" is "Math::MPFR::overload_pow"
   }
-  return mpfr2dd($rop1 ** $rop2);   # "**" is "Math::MPFR::overload_pow" 
+  return mpfr2dd($rop1 ** $rop2);   # "**" is "Math::MPFR::overload_pow"
 
 }
 
@@ -505,7 +505,7 @@ sub dd_pow_eq {
   if(@_ > 2) {
     # dd_pow_eq() has been called via
     # Math::FakeDD overloading of '**='.
-    return mpfr2dd($rop1 ** $rop2);          # "**" is "Math::MPFR::overload_pow". 
+    return mpfr2dd($rop1 ** $rop2);          # "**" is "Math::MPFR::overload_pow".
   }
 
   dd_assign($_[0], mpfr2dd($rop1 ** $rop2)); # "**" is "Math::MPFR::overload_pow".
@@ -595,7 +595,7 @@ sub dd_sub {
   if(@_ && $_[0]) { # switch args
     return mpfr2dd($rop2 - $rop1); # "-" is "Math::MPFR::overload_sub"
   }
-  return mpfr2dd($rop1 - $rop2);   # "-" is "Math::MPFR::overload_sub" 
+  return mpfr2dd($rop1 - $rop2);   # "-" is "Math::MPFR::overload_sub"
 
 }
 
@@ -624,9 +624,9 @@ sub dd_sub_eq {
   if(@_ > 2) {
     # dd_sub_eq() has been called via
     # Math::FakeDD overloading of '-='.
-    return mpfr2dd($rop1 - $rop2);          # "-" is "Math::MPFR::overload_sub". 
+    return mpfr2dd($rop1 - $rop2);          # "-" is "Math::MPFR::overload_sub".
   }
-  dd_assign($_[0], mpfr2dd($rop1 - $rop2)); # "-" is "Math::MPFR::overload_sub" 
+  dd_assign($_[0], mpfr2dd($rop1 - $rop2)); # "-" is "Math::MPFR::overload_sub"
 
 }
 
@@ -649,5 +649,40 @@ sub mpfr2dd {
   return bless(\%h);
 }
 
+sub oload {
+  # Return a list of the operator-function pairs for the overloaded
+  # operators and the respective functions that they call.
+
+  my %h = (
+    'abs'  => 'dd_abs',
+    'cos'  => 'dd_cos',
+    'exp'  => 'dd_exp',
+    'int'  => 'dd_int',
+    'log'  => 'dd_log',
+    'sin'  => 'dd_sin',
+    'sqrt' => 'dd_sqrt',
+    '+'    => 'dd_add',
+    '+='   => 'dd_add_eq',
+    '/'    => 'dd_div',
+    '/='   => 'dd_div_eq',
+    '=='   => 'dd_eq',
+    '>'    => 'dd_gt',
+    '>='   => 'dd_gte',
+    '<'    => 'dd_lt',
+    '<='   => 'dd_lte',
+    '*'    => 'dd_mul',
+    '*='   => 'dd_mul_eq',
+    '!='   => 'dd_neq',
+    '**'   => 'dd_pow',
+    '**='  => 'dd_pow_eq',
+    '<=>'  => 'dd_spaceship',
+    '""'   => 'dd_stringify',
+    '-'    => 'dd_sub',
+    '-='   => 'dd_sub_eq'
+);
+
+  return %h
+}
+
 1;
-  
+
