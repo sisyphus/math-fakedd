@@ -27,6 +27,10 @@ for(my $i = -300; $i <= 300; $i++) {
     my $orig = Math::FakeDD->new($str);
     my $repro = dd_repro($orig);
 
+    cmp_ok($orig,      '==', abs(Math::FakeDD->new($repro) * -1), "$str: abs() ok");
+    my $t = int(Math::MPFR->new($repro));
+    cmp_ok(int($orig), '==', Math::FakeDD->new("$t")            , "$str: int() ok");
+
     my $check1 = Math::FakeDD->new($repro);
     cmp_ok($check1, '==', $orig, "$str: round trip achieved");
 
@@ -49,5 +53,6 @@ for(my $i = -300; $i <= 300; $i++) {
   }
 }
 
+# cmp_ok(1, '==', 3, "failing test");
 done_testing();
 
