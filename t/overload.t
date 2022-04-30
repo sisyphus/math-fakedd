@@ -59,5 +59,19 @@ $check1 **= '0.6';
 
 cmp_ok($check1, '==', dd_pow(3, '0.6'), "'**=' overloading ok");
 
+my $fudd1 = Math::FakeDD->new(2 ** 100);
+my $fudd2 = $fudd1 + (2 ** - 100);
+
+cmp_ok(dd_cmp($fudd1, $fudd2), '<', 0, "(2 ** 100) < (2 ** 100) + (2 **-100)");
+cmp_ok(dd_cmp($fudd2, $fudd1), '>', 0, "(2 ** 100) + (2 **-100) > (2 ** 100)");
+
+cmp_ok(dd_cmp($fudd1, -$fudd2), '>', 0, "(2 ** 100) < -(2 ** 100) - (2 **-100)");
+cmp_ok(dd_cmp($fudd1, abs(-$fudd2)), '<', 0, "(2 ** 100) < abs(-(2 ** 100) + -(2 **-100))");
+
+cmp_ok($fudd1, '==', int($fudd2), "(2 ** 100) < int((2 ** 100) + (2 **-100))");
+
+my %oload = Math::FakeDD::oload();
+
+cmp_ok(scalar keys(%oload), '==', 25, "Math::FakeDD::oload relative sizes ok");
 
 done_testing();
