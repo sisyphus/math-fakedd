@@ -182,6 +182,24 @@
 
   The keys are the overloaded operations, and their respective values
   name the functions used in the respective operation.
+  These functions are documented above - except for dd_true() and
+  dd_false() which are documented here:
+
+  dd_true($obj);
+
+   This function is not exported.
+   It is intended to be called only by overloading of 'bool'.
+   Returns 1 unless $obj is NaN or zero; else returns 0.
+   (This is the same criterion as used by Math::MPFR's overloading
+   of 'bool'.)
+
+  dd_false($obj);
+
+   This function is not exported.
+   It is intended to be called only by overloading of '!'.
+   Returns 1 if $obj is NaN or zero; else returns 0.
+   (This is the same criterion as used by Math::MPFR's overloading
+   of '!'.)
 
 =head1 ARITHMETIC IMPLEMENTATION
 
