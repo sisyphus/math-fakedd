@@ -21,13 +21,17 @@
 
   Perform DoubleDouble arithmetic operations on all architectures and
   perl configurations.
+  See ARITMETIC IMPLEMENTATION section below.
 
 =head1 SYNOPSIS
 
-  use Math::FakeDD qw(:all
+  use Math::FakeDD qw(:all);
   my $obj = Math::FakeDD->new('0.1');
   print $obj; # Outputs [0.1 -5.551115123125783e-18] irrespective of
-              # perl's NV type.
+              # perl's NV type. We see that the more significant double
+              # is 0.1, identical to the double precision representation
+              # of 0.1, and the less signficant double is
+              # -5.551115123125783e-18.
 
   my $obj =  Math::FakeDD->new(0.1);
   print $obj; # Outputs [0.1 0.0] if NV type is 'double'.
@@ -40,16 +44,7 @@
 
    "$arg", "$arg1", "$arg2", etc. are arguments that can be either a
     string (perl PV), a native perl numeric type (NV or IV or UV), or
-    a Math::FakeDD object. Where  these "$arg*" arguments are not
-    Math::FakeDD objects, they are first converted, with as little
-    loss of information as possible, to a Math::FakeDD object prior to
-    the arithmetical operation. That arithmetical operation is then
-    also conducted such that information loss is minimized to the
-    greatest extent possible, within the limitations of the
-    "DoubleDouble" data type. In that "arithmetical operation", values
-    will first be rounded to 2098 bits, then rounded again as needed
-    to fit inside the DoubleDouble format. To that extent, the ULP (aka
-    "Unit in Last Place") can be affected by double-rounding.
+    a Math::FakeDD object.
 
     "$obj" is a Math::FakeDD object.
 
@@ -162,8 +157,8 @@
    Display the value of $obj in scientific notation, using
    as few decimal mantissa digits as possible. If this $str
    is assigned to a new Math::FakeDD object, then the new
-   Math::FakeDD object will be identical to the Math::FakeDD
-   object from which this $str was derived.
+   Math::FakeDD object will be identical to (ie a reproduction
+   of) the Math::FakeDD object from which $str was derived.
 
   $str = dd_dec($obj); # "dec" short for "decimalize"
 
@@ -174,16 +169,35 @@
    be identical to the Math::FakeDD object from which this
    $str was derived. However, the number of mantissa digits
    returned by dd_dec() will be >= (usually greater than) the
-   number of mantissa digits returned by dd_repro.
+   number of mantissa digits returned by dd_repro().
 
 =head1 OPERATOR OVERLOADING
+
+  The following operations are currently overloaded:
+   "", ==, !=, *, *=, **, **=, +, +=, -, -=, /, /=, <, <=, <=>, >, >=
+   abs, int, sin, cos, exp, log, sqrt
 
   Run
     my %oloads = Math::FAKEDD::oload();
 
-  The keys are the overloaded operations, and their respective values are
-  the functions used in the respective operation.
+  The keys are the overloaded operations, and their respective values
+  name the functions used in the respective operation.
 
+=head1 ARITHMETIC IMPLEMENTATION
+
+  Operands are first converted to a 2098-bit value (Math::MPFR object).
+  If the operand is a Math::FakeDD object then the conversion is exact.
+  Else, the conversion might not be exact, depending upon the value.
+  The result of the operation on the 2098-bit operand(s) will also be
+  rounded to 2098 bits, and that value will then be rounded to its
+  DoubleDouble implementation.
+  Thus we see that double rounding can occur.
+  DoubleDoubles with real values have precision of between 107 and
+  2098 bits (depending upon their value), except for subnormalized
+  double precision values where precision is in the range 1 to 52
+  bits (depending upon value).
+
+  All rounding is done to nearest, with ties to even.
 
 =head1 LICENSE
 
