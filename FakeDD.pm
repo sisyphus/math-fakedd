@@ -11,6 +11,7 @@ use constant NV_IS_DOUBLEDOUBLE => $Config{nvsize} != 8 &&
 
 use overload
 'abs'  => \&dd_abs,
+'bool' => \&dd_true,
 'cos'  => \&dd_cos,
 'exp'  => \&dd_exp,
 'int'  => \&dd_int,
@@ -35,6 +36,7 @@ use overload
 '""'   => \&dd_stringify,
 '-'    => \&dd_sub,
 '-='   => \&dd_sub_eq,
+'!'    => \&dd_false,
 ;
 
 require Exporter;
@@ -671,11 +673,13 @@ sub mpfr2dd {
 }
 
 sub oload {
+  # Not exported.
   # Return a list of the operator-function pairs for the overloaded
   # operators and the respective functions that they call.
 
   my %h = (
     'abs'  => 'dd_abs',
+    'bool' => 'dd_true',
     'cos'  => 'dd_cos',
     'exp'  => 'dd_exp',
     'int'  => 'dd_int',
@@ -699,11 +703,29 @@ sub oload {
     '<=>'  => 'dd_spaceship',
     '""'   => 'dd_stringify',
     '-'    => 'dd_sub',
-    '-='   => 'dd_sub_eq'
+    '-='   => 'dd_sub_eq',
+    '!'    => 'dd_false',
 );
 
   return %h
 }
+
+sub dd_true {
+  die "Not a Math::FakeDD object passed to dd_true()"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  return 1 if(dd2mpfr(shift)); # Uses Math::MPFR overloading of 'bool'
+  return 0;
+}
+
+sub dd_false {
+  die "Not a Math::FakeDD object passed to dd_false()"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  return 1 if !(dd2mpfr(shift)); # Uses Math::MPFR overloading of '!'
+  return 0;
+}
+
 
 1;
 
