@@ -16,6 +16,6 @@ Please raise any issues with Math::MPFR at:
 Please raise any issues with Math::FakeDD at:
  https://github.com/sisyphus/math-fakedd/issues
 
-Thje basics of the DoubleDouble datat type3 and its
+The basics of the DoubleDouble data type and its
 arithmetic can be found at:
 https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format#Double-double_arithmetic
