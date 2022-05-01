@@ -26,8 +26,14 @@ for(my $i = -300; $i <= 300; $i++) {
 
     my $orig = Math::FakeDD->new($str);
     my $repro = dd_repro($orig);
+    my $decimal = dd_dec($orig);
 
-    cmp_ok($orig,      '==', abs(Math::FakeDD->new($repro) * -1), "$str: abs() ok");
+    my $dd_repro   = Math::FakeDD->new($repro);
+    my $dd_decimal = Math::FakeDD->new($decimal);
+
+    cmp_ok($dd_repro, '==', $dd_decimal, "exact decimal representation assigns correctly");
+
+    cmp_ok($orig,      '==', abs($dd_repro * -1), "$str: abs() ok");
     my $t = int(Math::MPFR->new($repro));
     cmp_ok(int($orig), '==', Math::FakeDD->new("$t")            , "$str: int() ok");
 
