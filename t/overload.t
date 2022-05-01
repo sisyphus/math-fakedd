@@ -72,6 +72,24 @@ cmp_ok($fudd1, '==', int($fudd2), "(2 ** 100) < int((2 ** 100) + (2 **-100))");
 
 my %oload = Math::FakeDD::oload();
 
-cmp_ok(scalar keys(%oload), '==', 25, "Math::FakeDD::oload relative sizes ok");
+cmp_ok(scalar keys(%oload), '==', 27, "Math::FakeDD::oload relative sizes ok");
+
+for(0.2, 0.3, 0.4, 0.50, 0.6, 0.8, 1, 2) {
+
+  cmp_ok( approx( (sin(Math::FakeDD->new($_)) ** 2) + (cos(Math::FakeDD->new($_)) ** 2), 0.0000000001, 1),
+         '==', 1, "sin($_) and cos($_) ok");
+  cmp_ok(sin(Math::FakeDD->new($_)), '==', dd_sin($_), "dd_sin($_) ok");
+  cmp_ok(cos(Math::FakeDD->new($_)), '==', dd_cos($_), "dd_cos($_) ok");
+}
+
+cmp_ok(Math::FakeDD->new(1)                         , '==', 1, "Math::FakeDD->new(1) returns true");
+cmp_ok(Math::FakeDD->new()                          , '==', 0, "Math::FakeDD->new() returns false");
+cmp_ok(Math::FakeDD::mpfr2dd(Math::MPFR->new()), '==', 0, "Math::FakeDD->new(NaN) returns false");
+
 
 done_testing();
+
+sub approx {
+  return 1 if($_[2] - $_[1] < $_[0] && $_[2] + $_[1] > $_[0]);
+  return 0;
+}
