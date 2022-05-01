@@ -3,6 +3,7 @@ Changes
 FakeDD.pm
 FakeDD.pod
 Makefile.PL
+README
 
 t/add.t
 t/assign.t
