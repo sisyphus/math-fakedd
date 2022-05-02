@@ -60,15 +60,23 @@ cmp_ok($rop1, '!=', $rop2, "MPFR 2098-bit: 3 **0.6 != 3 ** '0.6'");
 my $s1 = Math::MPFR::mpfrtoa($rop1);
 my $s2 = Math::MPFR::mpfrtoa($rop2);
 
-cmp_ok($s1, 'ne', $s2, "MPFR 2098-bit: mpfrtoa(3**0.6) ne mpfrtoa(3**'0.6')");
+unless(NV_IS_DOUBLEDOUBLE) {
 
-if(NV_IS_DOUBLE || NV_IS_80BIT_LD) {
-  cmp_ok(Math::FakeDD->new($s1), '!=', Math::FakeDD->new($s2), "DD 3**0.6 != DD 3**'0.6'");
-  cmp_ok(Math::FakeDD->new(3) ** 0.6  , '!=', 3 ** Math::FakeDD->new('0.6'), "4:'**' overloading ok");
-}
-else {
-  cmp_ok(Math::FakeDD->new($s1), '==', Math::FakeDD->new($s2), "DD 3**0.6 != DD 3**'0.6'");
-  cmp_ok(Math::FakeDD->new(3) ** 0.6  , '==', 3 ** Math::FakeDD->new('0.6'), "4:'**' overloading ok");
+  # Actual doubledouble builds are too buggy
+  # to be reliable here.
+
+  cmp_ok($s1, 'ne', $s2, "MPFR 2098-bit: mpfrtoa(3**0.6) ne mpfrtoa(3**'0.6')"); # This test should fail
+                                                                                 # if NV_IS_DOUBLEDOUBLE
+
+  if(NV_IS_DOUBLE || NV_IS_80BIT_LD) {
+    cmp_ok(Math::FakeDD->new($s1), '!=', Math::FakeDD->new($s2), "DD 3**0.6 != DD 3**'0.6'");
+    cmp_ok(Math::FakeDD->new(3) ** 0.6  , '!=', 3 ** Math::FakeDD->new('0.6'), "4:'**' overloading ok");
+  }
+  else {
+    # These tests should pass if NV_IS_DOUBLE
+    cmp_ok(Math::FakeDD->new($s1), '==', Math::FakeDD->new($s2), "DD 3**0.6 == DD 3**'0.6'");
+    cmp_ok(Math::FakeDD->new(3) ** 0.6  , '==', 3 ** Math::FakeDD->new('0.6'), "4:'**' overloading ok");
+  }
 }
 
 my $check1 = Math::FakeDD->new(3);
