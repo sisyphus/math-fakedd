@@ -5,46 +5,57 @@ use warnings;
 use Math::MPFR qw(:mpfr);
 use Config;
 
+use 5.022; # for $Config{longdblkind}
+
 use constant NV_IS_DOUBLE       => $Config{nvsize} == 8 ? 1 : 0;
+
 use constant NV_IS_DOUBLEDOUBLE => $Config{nvsize} != 8 &&
                                    ($Config{longdblkind} >=5 && $Config{longdblkind} <= 8) ? 1 : 0;
 
+use constant NV_IS_QUAD => $Config{nvtype} eq '__float128' ||
+                           ($Config{nvtype} eq 'long double' && $Config{longdblkind} > 0
+                              && $Config{longdblkind} < 3)                                 ? 1 : 0;
+
+use constant NV_IS_80BIT_LD => $Config{nvtype} eq 'long double' &&
+                               $Config{longdblkind} > 2 && $Config{longdblkind} < 5         ? 1 : 0;
+
 use overload
-'abs'  => \&dd_abs,
-'bool' => \&dd_true,
-'cos'  => \&dd_cos,
-'exp'  => \&dd_exp,
-'int'  => \&dd_int,
-'log'  => \&dd_log,
-'sin'  => \&dd_sin,
-'sqrt' => \&dd_sqrt,
-'+'    => \&dd_add,
-'+='   => \&dd_add_eq,
-'/'    => \&dd_div,
-'/='   => \&dd_div_eq,
-'=='   => \&dd_eq,
-'>'    => \&dd_gt,
-'>='   => \&dd_gte,
-'<'    => \&dd_lt,
-'<='   => \&dd_lte,
-'*'    => \&dd_mul,
-'*='   => \&dd_mul_eq,
-'!='   => \&dd_neq,
-'**'   => \&dd_pow,
-'**='  => \&dd_pow_eq,
-'<=>'  => \&dd_spaceship,
-'""'   => \&dd_stringify,
-'-'    => \&dd_sub,
-'-='   => \&dd_sub_eq,
-'!'    => \&dd_false,
+'abs'   => \&dd_abs,
+'atan2' => \&dd_atan2,
+'bool'  => \&dd_true,
+'cos'   => \&dd_cos,
+'exp'   => \&dd_exp,
+'int'   => \&dd_int,
+'log'   => \&dd_log,
+'sin'   => \&dd_sin,
+'sqrt'  => \&dd_sqrt,
+'+'     => \&dd_add,
+'+='    => \&dd_add_eq,
+'/'     => \&dd_div,
+'/='    => \&dd_div_eq,
+'=='    => \&dd_eq,
+'>'     => \&dd_gt,
+'>='    => \&dd_gte,
+'<'     => \&dd_lt,
+'<='    => \&dd_lte,
+'*'     => \&dd_mul,
+'*='    => \&dd_mul_eq,
+'!='    => \&dd_neq,
+'**'    => \&dd_pow,
+'**='   => \&dd_pow_eq,
+'<=>'   => \&dd_spaceship,
+'""'    => \&dd_stringify,
+'-'     => \&dd_sub,
+'-='    => \&dd_sub_eq,
+'!'     => \&dd_false,
 ;
 
 require Exporter;
 *import = \&Exporter::import;
 
 @Math::FakeDD::EXPORT_OK = qw(
-  NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE
-  dd_abs dd_add dd_add_eq dd_assign dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
+  NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD
+  dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
   dd_gt dd_gte dd_int dd_log dd_lt dd_lte
   dd_mul dd_mul_eq dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
   dd_sub dd_sub_eq
@@ -53,9 +64,6 @@ require Exporter;
 %Math::FakeDD::EXPORT_TAGS = (all =>[@Math::FakeDD::EXPORT_OK]);
 
 $Math::FakeDD::VERSION =  0.01;
-
-Rmpfr_set_default_prec(2098);
-
 
 sub new {
 
@@ -75,7 +83,7 @@ sub new {
   return shift
     if ref($_[0]) eq "Math::FakeDD";
 
-  return mpfr2dd(shift);
+  return mpfr2dd(mpfr2098(shift));
 }
 
 sub dd_abs {
@@ -84,23 +92,20 @@ sub dd_abs {
 
   if(ref($_[0]) eq 'Math::FakeDD') {
     $obj = shift;
-    if($obj->{msd} < 0) {
-      $ret->{msd} = -$obj->{msd};
-      $ret->{lsd} = -$obj->{lsd};
-    }
-    else {
-      $ret->{msd} = $obj->{msd};
-      $ret->{lsd} = $obj->{lsd};
-    }
-
-    return $ret;
+  }
+  else {
+    $obj = Math::FakeDD->new(shift);
   }
 
-  $obj = Math::FakeDD->new(shift);
-  my $mpfr = abs(dd2mpfr($obj)); # "abs" is "Math::MPFR::overload_abs"
-  $obj = mpfr2dd($mpfr);
-  $ret->{msd} = $obj->{msd};
-  $ret->{lsd} = $obj->{lsd};
+  if($obj->{msd} < 0) {
+    $ret->{msd} = -$obj->{msd};
+    $ret->{lsd} = -$obj->{lsd};
+  }
+  else {
+    $ret->{msd} = $obj->{msd};
+    $ret->{lsd} = $obj->{lsd};
+  }
+
   return $ret;
 }
 
@@ -116,17 +121,18 @@ sub dd_add {
     $rop1 = dd2mpfr(shift);
   }
   else {
-    $rop1 = Math::MPFR->new(shift);
+    $rop1 = mpfr2098(shift);
   }
 
   if(ref($_[0]) eq 'Math::FakeDD') {
     $rop2 = dd2mpfr(shift);
   }
   else {
-    $rop2 = Math::MPFR->new(shift);
+    $rop2 = mpfr2098(shift);
   }
 
-  return mpfr2dd($rop1 + $rop2); # "+" is "Math::MPFR::overload_add"
+  Rmpfr_add($rop1, $rop1, $rop2, MPFR_RNDN);
+  return mpfr2dd($rop1);
 
 }
 
@@ -149,16 +155,18 @@ sub dd_add_eq {
     $rop2 = dd2mpfr($_[1]);
   }
   else {
-    $rop2 = Math::MPFR->new($_[1]);
+    $rop2 = mpfr2098($_[1]);
   }
+
+  Rmpfr_add($rop1, $rop1, $rop2, MPFR_RNDN);
 
   if(@_ > 2) {
     # dd_add_eq() has been called via
     # Math::FakeDD overloading of '+='.
-    return mpfr2dd($rop1 + $rop2);          # "+" is "Math::MPFR::overload_add".
+    return mpfr2dd($rop1);
   }
 
-  dd_assign($_[0], mpfr2dd($rop1 + $rop2)); # "+" is "Math::MPFR::overload_add".
+  dd_assign($_[0], mpfr2dd($rop1));
 }
 
 sub dd_assign {
@@ -174,11 +182,44 @@ sub dd_assign {
     $_[0]->{lsd} = $val->{lsd};
   }
   else {
-    my $obj = mpfr2dd($val);
+    my $obj = mpfr2dd(mpfr2098($val));
     $_[0]->{msd} = $obj->{msd};
     $_[0]->{lsd} = $obj->{lsd};
   }
 }
+
+sub dd_atan2 {
+
+  # When dd_atan2 is called via overloading of 'atan2' a
+  # third argument (which we cannot ignore) will be provided
+  die "Wrong number of arguments given to dd_add()"
+    if @_ > 3;
+
+  my ($rop1, $rop2);
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop1 = dd2mpfr(shift);
+  }
+  else {
+    $rop1 = mpfr2098(shift);
+  }
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop2 = dd2mpfr(shift);
+  }
+  else {
+    $rop2 = mpfr2098(shift);
+  }
+
+  if(@_ && $_[0]) { # switch args
+    Rmpfr_atan2($rop2, $rop2, $rop1, MPFR_RNDN);
+    return mpfr2dd($rop2);
+  }
+
+  Rmpfr_atan2($rop1, $rop1, $rop2, MPFR_RNDN);
+  return mpfr2dd($rop1);
+}
+
 
 sub dd_cmp {
 
@@ -191,7 +232,6 @@ sub dd_cmp {
     $rop1 = dd2mpfr(shift);
   }
   else {
-#   $rop1 = Math::MPFR->new(shift);
     $rop1 = dd2mpfr(Math::FakeDD->new(shift));
   }
 
@@ -199,7 +239,6 @@ sub dd_cmp {
     $rop2 = dd2mpfr(shift);
   }
   else {
-#   $rop2 = Math::MPFR->new(shift);
     $rop2 = dd2mpfr(Math::FakeDD->new(shift));
   }
 
@@ -213,7 +252,8 @@ sub dd_cos {
     $obj = Math::FakeDD->new(shift);
   }
   my $ret = Math::FakeDD->new();
-  my $mpfr = cos(dd2mpfr($obj)); # "cos" is "Math::MPFR::overload_cos"
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_cos($mpfr, dd2mpfr($obj), MPFR_RNDN);
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
@@ -238,20 +278,22 @@ sub dd_div {
     $rop1 = dd2mpfr(shift);
   }
   else {
-    $rop1 = Math::MPFR->new(shift);
+    $rop1 = mpfr2098(shift);
   }
 
   if(ref($_[0]) eq 'Math::FakeDD') {
     $rop2 = dd2mpfr(shift);
   }
   else {
-    $rop2 = Math::MPFR->new(shift);
+    $rop2 = mpfr2098(shift);
   }
 
   if(@_ && $_[0]) { # switch args
-    return mpfr2dd($rop2 / $rop1); # "/" is "Math::MPFR::overload_div"
+    Rmpfr_div($rop2, $rop2, $rop1, MPFR_RNDN);
+    return mpfr2dd($rop2);
   }
-  return mpfr2dd($rop1 / $rop2);   # "/" is "Math::MPFR::overload_div"
+  Rmpfr_div($rop1, $rop1, $rop2, MPFR_RNDN);
+  return mpfr2dd($rop1);
 
 }
 
@@ -274,15 +316,17 @@ sub dd_div_eq {
     $rop2 = dd2mpfr($_[1]);
   }
   else {
-    $rop2 = Math::MPFR->new($_[1]);
+    $rop2 = mpfr2098($_[1]);
   }
+
+  Rmpfr_div($rop1, $rop1, $rop2, MPFR_RNDN);
 
   if(@_ > 2) {
     # dd_div_eq() has been called via
     # Math::FakeDD overloading of '/='.
-    return mpfr2dd($rop1 / $rop2);          # "/" is "Math::MPFR::overload_div".
+    return mpfr2dd($rop1);
   }
-  dd_assign($_[0], mpfr2dd($rop1 / $rop2)); # "/" is "Math::MPFR::overload_div"
+  dd_assign($_[0], mpfr2dd($rop1));
 
 }
 
@@ -303,7 +347,8 @@ sub dd_exp {
     $obj = Math::FakeDD->new(shift);
   }
   my $ret = Math::FakeDD->new();
-  my $mpfr = exp(dd2mpfr($obj)); # "exp" is "Math::MPFR::overload_exp"
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_exp($mpfr, dd2mpfr($obj), MPFR_RNDN);
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
@@ -352,7 +397,8 @@ sub dd_int {
     $obj = Math::FakeDD->new(shift);
   }
   my $ret = Math::FakeDD->new();
-  my $mpfr = int(dd2mpfr($obj)); # "int" is "Math::MPFR::overload_int"
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_trunc($mpfr, dd2mpfr($obj));
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
@@ -366,7 +412,8 @@ sub dd_log {
     $obj = Math::FakeDD->new(shift);
   }
   my $ret = Math::FakeDD->new();
-  my $mpfr = log(dd2mpfr($obj)); # "log" is "Math::MPFR::overload_log"
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_log($mpfr, dd2mpfr($obj), MPFR_RNDN);
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
@@ -415,17 +462,18 @@ sub dd_mul {
     $rop1 = dd2mpfr(shift);
   }
   else {
-    $rop1 = Math::MPFR->new(shift);
+    $rop1 = mpfr2098(shift);
   }
 
   if(ref($_[0]) eq 'Math::FakeDD') {
     $rop2 = dd2mpfr(shift);
   }
   else {
-    $rop2 = Math::MPFR->new(shift);
+    $rop2 = mpfr2098(shift);
   }
 
-  return mpfr2dd($rop1 * $rop2); # "*" is "Math::MPFR::overload_mul"
+  Rmpfr_mul($rop1, $rop1, $rop2, MPFR_RNDN);
+  return mpfr2dd($rop1);
 
 }
 
@@ -448,16 +496,18 @@ sub dd_mul_eq {
     $rop2 = dd2mpfr($_[1]);
   }
   else {
-    $rop2 = Math::MPFR->new($_[1]);
+    $rop2 = mpfr2098($_[1]);
   }
+
+  Rmpfr_mul($rop1, $rop1, $rop2, MPFR_RNDN);
 
   if(@_ > 2) {
     # dd_mul_eq() has been called via
     # Math::FakeDD overloading of '*='.
-    return mpfr2dd($rop1 * $rop2);          # "*" is "Math::MPFR::overload_mul".
+    return mpfr2dd($rop1);
   }
 
-  dd_assign($_[0], mpfr2dd($rop1 * $rop2)); # "*" is "Math::MPFR::overload_mul".
+  dd_assign($_[0], mpfr2dd($rop1));
 }
 
 sub dd_neq {
@@ -482,20 +532,22 @@ sub dd_pow {
     $rop1 = dd2mpfr(shift);
   }
   else {
-    $rop1 = Math::MPFR->new(shift);
+    $rop1 = mpfr2098(shift);
   }
 
   if(ref($_[0]) eq 'Math::FakeDD') {
     $rop2 = dd2mpfr(shift);
   }
   else {
-    $rop2 = Math::MPFR->new(shift);
+    $rop2 = mpfr2098(shift);
   }
 
   if(@_ && $_[0]) { # switch args
-    return mpfr2dd($rop2 ** $rop1); # "**" is "Math::MPFR::overload_pow"
+    Rmpfr_pow($rop2, $rop2, $rop1, MPFR_RNDN);
+    return mpfr2dd($rop2);
   }
-  return mpfr2dd($rop1 ** $rop2);   # "**" is "Math::MPFR::overload_pow"
+  Rmpfr_pow($rop1, $rop1, $rop2, MPFR_RNDN);
+  return mpfr2dd($rop1);
 
 }
 
@@ -518,20 +570,22 @@ sub dd_pow_eq {
     $rop2 = dd2mpfr($_[1]);
   }
   else {
-    $rop2 = Math::MPFR->new($_[1]);
+    $rop2 = mpfr2098($_[1]);
   }
+
+  Rmpfr_pow($rop1, $rop1, $rop2, MPFR_RNDN);
 
   if(@_ > 2) {
     # dd_pow_eq() has been called via
     # Math::FakeDD overloading of '**='.
-    return mpfr2dd($rop1 ** $rop2);          # "**" is "Math::MPFR::overload_pow".
+    return mpfr2dd($rop1);
   }
 
-  dd_assign($_[0], mpfr2dd($rop1 ** $rop2)); # "**" is "Math::MPFR::overload_pow".
+  dd_assign($_[0], mpfr2dd($rop1));
 }
 
 sub dd_repro {
-  die "Wrong arg given to dd_repro()"
+  die "Arg given to dd_repro() must be a Math::FakeDD object"
     unless ref($_[0]) eq 'Math::FakeDD';
   return mpfrtoa(dd2mpfr(shift));
 }
@@ -543,7 +597,8 @@ sub dd_sin {
     $obj = Math::FakeDD->new(shift);
   }
   my $ret = Math::FakeDD->new();
-  my $mpfr = sin(dd2mpfr($obj)); # "sin" is "Math::MPFR::overload_sin"
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_sin($mpfr, dd2mpfr($obj), MPFR_RNDN);
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
@@ -571,7 +626,9 @@ sub dd_sqrt {
     $obj = Math::FakeDD->new(shift);
   }
   my $ret = Math::FakeDD->new();
-  my $mpfr = sqrt(dd2mpfr($obj)); # "sqrt" is "Math::MPFR::overload_sqrt"
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_sqrt($mpfr, dd2mpfr($obj), MPFR_RNDN);
+
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
@@ -601,21 +658,23 @@ sub dd_sub {
     $rop1 = dd2mpfr(shift);
   }
   else {
-    $rop1 = Math::MPFR->new(shift);
+    $rop1 = mpfr2098(shift);
   }
 
   if(ref($_[0]) eq 'Math::FakeDD') {
     $rop2 = dd2mpfr(shift);
   }
   else {
-    $rop2 = Math::MPFR->new(shift);
+    $rop2 = mpfr2098(shift);
   }
 
   if(@_ && $_[0]) { # switch args
-    return mpfr2dd($rop2 - $rop1); # "-" is "Math::MPFR::overload_sub"
+    Rmpfr_sub($rop2, $rop2, $rop1, MPFR_RNDN);
+    return mpfr2dd($rop2);
   }
-  return mpfr2dd($rop1 - $rop2);   # "-" is "Math::MPFR::overload_sub"
 
+  Rmpfr_sub($rop1, $rop1, $rop2, MPFR_RNDN);
+  return mpfr2dd($rop1);
 }
 
 sub dd_sub_eq {
@@ -637,28 +696,44 @@ sub dd_sub_eq {
     $rop2 = dd2mpfr($_[1]);
   }
   else {
-    $rop2 = Math::MPFR->new($_[1]);
+    $rop2 = mpfr2098($_[1]);
   }
+
+  Rmpfr_sub($rop1, $rop1, $rop2, MPFR_RNDN);
 
   if(@_ > 2) {
     # dd_sub_eq() has been called via
     # Math::FakeDD overloading of '-='.
-    return mpfr2dd($rop1 - $rop2);          # "-" is "Math::MPFR::overload_sub".
+    return mpfr2dd($rop1);
   }
-  dd_assign($_[0], mpfr2dd($rop1 - $rop2)); # "-" is "Math::MPFR::overload_sub"
+
+  dd_assign($_[0], mpfr2dd($rop1));
 
 }
 
-
 sub dd2mpfr {
   my $self = shift;
-  return Math::MPFR->new($self->{msd}) +
-       + Math::MPFR->new($self->{lsd});
+  my $ret = Rmpfr_init2(2098);
+  Rmpfr_add($ret, mpfr2098($self->{msd}), mpfr2098($self->{lsd}), MPFR_RNDN);
+  return $ret;
 }
 
 sub mpfr2dd {
   my %h;
-  my $mpfr = Math::MPFR->new(shift);
+
+  die "Arg given to mpfr2dd() must be a Math::MPFR object"
+    unless ref($_[0]) eq 'Math::MPFR';
+
+  # mpfr2dd() will handle an argument of any precision - but if the
+  # precision is not 2098, then it's probably a mistake. So let's
+  # disallow it until it becomes evident that it should be permitted.
+
+  die "Precision of Math::MPFR object passed to mpfr2dd() must be 2098"
+    unless Rmpfr_get_prec($_[0]) == 2098;
+
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_set($mpfr, shift, MPFR_RNDN);
+
   my $msd = Rmpfr_get_d($mpfr, MPFR_RNDN);
   if($msd == 0 || $msd != $msd || $msd / $msd != 1) { # $msd is zero, nan, or inf.
     $h{msd} = $msd;
@@ -672,39 +747,68 @@ sub mpfr2dd {
   return bless(\%h);
 }
 
+sub mpfr2098 {
+  # Set the argument to a 2098-bit precision Math::MPFR object.
+  my $ret = Rmpfr_init2(2098);
+  my $itsa = Math::MPFR::_itsa($_[0]);
+
+  # Arg must be one of PV (string), IV (integer), UV (unsigned integer),
+  # NV (perl floating point type) or Math::MPFR object.
+
+  die "Invalid arg passed internally to mpfr2098()"
+    unless ($itsa > 0 && $itsa <= 4);
+
+  my $arg = shift;
+
+  if($itsa == 4) {                           # PV
+    Rmpfr_set_str($ret, $arg, 0, MPFR_RNDN);
+    return $ret;
+  }
+
+  if($itsa == 3) {                           # NV
+    Rmpfr_set_NV($ret, $arg, MPFR_RNDN);
+    return $ret;
+  }
+
+  Rmpfr_set_IV($ret, $arg, MPFR_RNDN);       # IV/UV
+  return $ret;
+
+}
+
 sub oload {
   # Not exported.
   # Return a list of the operator-function pairs for the overloaded
   # operators and the respective functions that they call.
 
   my %h = (
-    'abs'  => 'dd_abs',
-    'bool' => 'dd_true',
-    'cos'  => 'dd_cos',
-    'exp'  => 'dd_exp',
-    'int'  => 'dd_int',
-    'log'  => 'dd_log',
-    'sin'  => 'dd_sin',
-    'sqrt' => 'dd_sqrt',
-    '+'    => 'dd_add',
-    '+='   => 'dd_add_eq',
-    '/'    => 'dd_div',
-    '/='   => 'dd_div_eq',
-    '=='   => 'dd_eq',
-    '>'    => 'dd_gt',
-    '>='   => 'dd_gte',
-    '<'    => 'dd_lt',
-    '<='   => 'dd_lte',
-    '*'    => 'dd_mul',
-    '*='   => 'dd_mul_eq',
-    '!='   => 'dd_neq',
-    '**'   => 'dd_pow',
-    '**='  => 'dd_pow_eq',
-    '<=>'  => 'dd_spaceship',
-    '""'   => 'dd_stringify',
-    '-'    => 'dd_sub',
-    '-='   => 'dd_sub_eq',
-    '!'    => 'dd_false',
+    'abs'   => 'dd_abs',
+    'atan2' => 'dd_atan2',
+    'bool'  => 'dd_true',
+    'cos'   => 'dd_cos',
+    'exp'   => 'dd_exp',
+    'int'   => 'dd_int',
+    'log'   => 'dd_log',
+    'sin'   => 'dd_sin',
+    'sqrt'  => 'dd_sqrt',
+    '+'     => 'dd_add',
+    '+='    => 'dd_add_eq',
+    '/'     => 'dd_div',
+    '/='    => 'dd_div_eq',
+    '=='    => 'dd_eq',
+    '>'     => 'dd_gt',
+    '>='    => 'dd_gte',
+    '<'     => 'dd_lt',
+    '<='    => 'dd_lte',
+    '*'     => 'dd_mul',
+    '*='    => 'dd_mul_eq',
+    '!='    => 'dd_neq',
+    '**'    => 'dd_pow',
+    '**='   => 'dd_pow_eq',
+    '<=>'   => 'dd_spaceship',
+    '""'    => 'dd_stringify',
+    '-'     => 'dd_sub',
+    '-='    => 'dd_sub_eq',
+    '!'     => 'dd_false',
 );
 
   return %h
