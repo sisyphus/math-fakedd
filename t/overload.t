@@ -45,12 +45,29 @@ cmp_ok(Math::FakeDD->new(3) ** 0.5  , '==', 3 ** Math::FakeDD->new(0.5  ), "1:'*
 cmp_ok(Math::FakeDD->new(3) ** '0.6', '==', 3 ** Math::FakeDD->new('0.6'), "2:'**' overloading ok");
 cmp_ok(Math::FakeDD->new(3) ** 0.6  , '==', 3 ** Math::FakeDD->new(0.6  ), "3:'**' overloading ok");
 
-if(NV_IS_DOUBLE) {
-  # Not equivalent
+my $op1 = Math::MPFR::Rmpfr_init2(2098);
+my $op2 = Math::MPFR::Rmpfr_init2(2098);
+my $rop1 = Math::MPFR::Rmpfr_init2(2098);
+my $rop2 = Math::MPFR::Rmpfr_init2(2098);
+
+Math::MPFR::Rmpfr_set_NV($op1, 0.6, 0);
+Math::MPFR::Rmpfr_set_str($op2, '0.6', 0, 0);
+Math::MPFR::Rmpfr_pow($rop1, Math::MPFR->new(3), $op1, 0);
+Math::MPFR::Rmpfr_pow($rop2, Math::MPFR->new(3), $op2, 0);
+
+cmp_ok($rop1, '!=', $rop2, "MPFR 2098-bit: 3 **0.6 != 3 ** '0.6'");
+
+my $s1 = Math::MPFR::mpfrtoa($rop1);
+my $s2 = Math::MPFR::mpfrtoa($rop2);
+
+cmp_ok($s1, 'ne', $s2, "MPFR 2098-bit: mpfrtoa(3**0.6) ne mpfrtoa(3**'0.6')");
+
+if(NV_IS_DOUBLE || NV_IS_80BIT_LD) {
+  cmp_ok(Math::FakeDD->new($s1), '!=', Math::FakeDD->new($s2), "DD 3**0.6 != DD 3**'0.6'");
   cmp_ok(Math::FakeDD->new(3) ** 0.6  , '!=', 3 ** Math::FakeDD->new('0.6'), "4:'**' overloading ok");
 }
-if($Config::Config{nvtype} eq '__float128') {
-  # Equivalent when represented as doubledoubles
+else {
+  cmp_ok(Math::FakeDD->new($s1), '==', Math::FakeDD->new($s2), "DD 3**0.6 != DD 3**'0.6'");
   cmp_ok(Math::FakeDD->new(3) ** 0.6  , '==', 3 ** Math::FakeDD->new('0.6'), "4:'**' overloading ok");
 }
 
@@ -72,7 +89,7 @@ cmp_ok($fudd1, '==', int($fudd2), "(2 ** 100) < int((2 ** 100) + (2 **-100))");
 
 my %oload = Math::FakeDD::oload();
 
-cmp_ok(scalar keys(%oload), '==', 27, "Math::FakeDD::oload relative sizes ok");
+cmp_ok(scalar keys(%oload), '==', 28, "Math::FakeDD::oload relative sizes ok");
 
 for(0.2, 0.3, 0.4, 0.50, 0.6, 0.8, 1, 2) {
 
@@ -84,7 +101,21 @@ for(0.2, 0.3, 0.4, 0.50, 0.6, 0.8, 1, 2) {
 
 cmp_ok(Math::FakeDD->new(1)                         , '==', 1, "Math::FakeDD->new(1) returns true");
 cmp_ok(Math::FakeDD->new()                          , '==', 0, "Math::FakeDD->new() returns false");
-cmp_ok(Math::FakeDD::mpfr2dd(Math::MPFR->new()), '==', 0, "Math::FakeDD->new(NaN) returns false");
+
+# We currently insist that the precision of the Math::MPFR
+# object passed to mpfr2dd() is 2098. Hence:
+
+my $mpfr_nan = Math::MPFR::Rmpfr_init2(2098);
+cmp_ok(Math::FakeDD::mpfr2dd($mpfr_nan), '==', 0, "Math::FakeDD->new(NaN) returns false");
+
+my $atan1 = dd_atan2(0.5, '0.3');
+cmp_ok($atan1, '==', atan2(Math::FakeDD->new(0.5), Math::FakeDD->new('0.3')), "1: atan2 ok");
+
+my $atan2 = dd_atan2('0.3', 0.5);
+cmp_ok($atan2, '==', atan2('0.3', Math::FakeDD->new(0.5)), "2: atan2 ok");
+
+cmp_ok(approx($atan1, 0.0000000001, '1.0303768265243125'), '==', 1, "3: atan2 ok");
+cmp_ok(approx($atan2, 0.0000000001, '0.54041950027058416'), '==', 1, "4: atan2 ok");
 
 
 done_testing();
