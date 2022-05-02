@@ -28,14 +28,21 @@ for(my $i = -300; $i <= 300; $i++) {
     my $repro = dd_repro($orig);
     my $decimal = dd_dec($orig);
 
+    if($orig < 1 && $orig > -1) {
+      cmp_ok(int($orig), '==', 0, "int() expected to return a value of 0");
+    }
+    else {
+      cmp_ok(int($orig), '!=', 0, "int() expected to return a value other than 0");
+    }
+
     my $dd_repro   = Math::FakeDD->new($repro);
     my $dd_decimal = Math::FakeDD->new($decimal);
 
     cmp_ok($dd_repro, '==', $dd_decimal, "exact decimal representation assigns correctly");
 
     cmp_ok($orig,      '==', abs($dd_repro * -1), "$str: abs() ok");
-    my $t = int(Math::MPFR->new($repro));
-    cmp_ok(int($orig), '==', Math::FakeDD->new("$t")            , "$str: int() ok");
+    my $t = int(Math::FakeDD->new($repro));
+    cmp_ok(int($orig), '==', $t                 , "$str: int() ok");
 
     my $check1 = Math::FakeDD->new($repro);
     cmp_ok($check1, '==', $orig, "$str: round trip achieved");
