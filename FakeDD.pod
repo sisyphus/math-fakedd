@@ -48,6 +48,8 @@
 
     "$obj" is a Math::FakeDD object.
 
+    "$mpfr" is a 2098-bit precision Math::MPFR object.
+
 =head1 ASSIGNMENT FUNCTIONS
 
   $obj = Math::FakeDD->new($arg); # $arg is optional here.
@@ -174,11 +176,12 @@
 =head1 OPERATOR OVERLOADING
 
   The following operations are currently overloaded:
-   "", ==, !=, *, *=, **, **=, +, +=, -, -=, /, /=, <, <=, <=>, >, >=
-   abs, int, sin, cos, exp, log, sqrt
+   "", ==, !=, *, *=, **, **=, +, +=, -, -=, /, /=, <, <=, <=>, >, >=,
+   abs, int, exp, log, sqrt,
+   atan2, cos, sin
 
   Run
-    my %oloads = Math::FAKEDD::oload();
+    my %oloads = Math::FakeDD::oload();
 
   The keys are the overloaded operations, and their respective values
   name the functions used in the respective operation.
@@ -201,6 +204,30 @@
    (This is the same criterion as used by Math::MPFR's overloading
    of '!'.)
 
+=head1 OTHER FUNCTIONS (not exported and might later be removed or altered)
+
+  $obj = mpfr2dd($mpfr);
+
+   Return the value held by the 2098-bit precision Math::MPFR object $mpfr
+   as a Math::FakeDD object $obj.
+   This conversion can lose precision - ie, can be subject to rounding.
+
+  $mpfr = dd2mpfr($obj);
+
+   Return the value held by the Math::FakeDD object $obj as a 2098-bit
+   precision Math::MPFR object $mpfr.
+   No precision is lost in this conversion.
+
+  $mpfr = mpfr2098($in);
+
+   Return the value held by $in as the 2098-bit precision Math::MPFR
+   object $mpfr.
+   $in can be a string (PV), an integer (IV), an unsigned integer (UV),
+   a perl floating point (NV) - but not a Math::FakeDD object.
+   To convert a Math::FakeDD object to a 2098-bit precision Math::MPFR
+   object, use dd2mpfr() instead.
+
+
 =head1 ARITHMETIC IMPLEMENTATION
 
   Operands are first converted to a 2098-bit value (Math::MPFR object).
@@ -208,8 +235,7 @@
   Else, the conversion might not be exact, depending upon the value.
   The result of the operation on the 2098-bit operand(s) will also be
   rounded to 2098 bits, and that value will then be rounded to its
-  DoubleDouble implementation.
-  Thus we see that double rounding can occur.
+  DoubleDouble format and returned as a Math::FakeDD object.
   DoubleDoubles with real values have precision of between 107 and
   2098 bits (depending upon their value), except for subnormalized
   double precision values where precision is in the range 1 to 52
