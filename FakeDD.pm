@@ -63,7 +63,7 @@ require Exporter;
 
 %Math::FakeDD::EXPORT_TAGS = (all =>[@Math::FakeDD::EXPORT_OK]);
 
-$Math::FakeDD::VERSION =  0.01;
+$Math::FakeDD::VERSION =  '0.02';
 
 sub new {
 
