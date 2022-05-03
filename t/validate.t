@@ -9,6 +9,8 @@
 # when the final digit of the mantissa is removed (truncated).
 # We then check that raising (what is now) the final digit by 1 (rounding
 # up) still renders the equivalence broken.
+#
+# Also run some basic sanity tests of int() and abs().
 
 use strict;
 use warnings;
@@ -66,6 +68,5 @@ for(my $i = -300; $i <= 300; $i++) {
   }
 }
 
-# cmp_ok(1, '==', 3, "failing test");
 done_testing();
 
