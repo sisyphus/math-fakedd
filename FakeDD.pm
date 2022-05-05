@@ -724,14 +724,14 @@ sub mpfr2dd {
   die "Arg given to mpfr2dd() must be a Math::MPFR object"
     unless ref($_[0]) eq 'Math::MPFR';
 
-  # mpfr2dd() will handle an argument of any precision - but if the
-  # precision is not 2098, then it's probably a mistake. So let's
-  # disallow it until it becomes evident that it should be permitted.
+#  Removing this condition
+#  die "Precision of Math::MPFR object passed to mpfr2dd() must be 2098"
+#    unless Rmpfr_get_prec($_[0]) == 2098;
 
-  die "Precision of Math::MPFR object passed to mpfr2dd() must be 2098"
-    unless Rmpfr_get_prec($_[0]) == 2098;
+  my $prec_in = Rmpfr_get_prec($_[0]);
+  my $mpfr_prec = $prec_in <= 2098 ? 2098 : $prec_in;
 
-  my $mpfr = Rmpfr_init2(2098);
+  my $mpfr = Rmpfr_init2($prec_in);
   Rmpfr_set($mpfr, shift, MPFR_RNDN);
 
   my $msd = Rmpfr_get_d($mpfr, MPFR_RNDN);
