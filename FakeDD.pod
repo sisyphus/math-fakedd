@@ -188,7 +188,7 @@
   These functions are documented above - except for dd_true() and
   dd_false() which are documented here:
 
-  dd_true($obj);
+  $iv = dd_true($obj);
 
    This function is not exported.
    It is intended to be called only by overloading of 'bool'.
@@ -196,7 +196,7 @@
    (This is the same criterion as used by Math::MPFR's overloading
    of 'bool'.)
 
-  dd_false($obj);
+  $iv = dd_false($obj);
 
    This function is not exported.
    It is intended to be called only by overloading of '!'.
@@ -204,13 +204,35 @@
    (This is the same criterion as used by Math::MPFR's overloading
    of '!'.)
 
-=head1 OTHER FUNCTIONS (not exported and might later be removed or altered)
+=head1 OTHER FUNCTIONS
 
-  $obj = mpfr2dd($mpfr);
+  $obj = dd_inf([$iv]); # $iv is an optional arg, which will be
+                        # evaluated in (signed) numeric context
 
-   Return the value held by the 2098-bit precision Math::MPFR object $mpfr
-   as a Math::FakeDD object $obj.
-   This conversion can lose precision - ie, can be subject to rounding.
+    If the optional arg $iv, is less than 0 (in numeric context, then
+    a Math::FakeDD object with value -Inf is returned.
+    Else return a +Inf Math::FakeDD object.
+
+  $obj = dd_nan();
+
+    Return a NaN Math::FakeDD object.
+
+  $iv = dd_is_inf($obj);
+
+    Returns 1 if $obj is an infinity.
+    Else returns 0.
+
+  $iv = dd_is_nan($obj);
+
+    Returns 1 if $obj is a NaN.
+    Else returns 0.
+
+  $obj = mpfr2dd         ($mpfr); # Precision of $mpfr is 2098 bits.
+  $obj = mpfr_any_prec2dd($mpfr); # Precision of $mpfr is unrestricted.
+
+   Return the value held by the 2 Math::MPFR object $mpfr as the
+   Math::FakeDD object $obj.
+   Precision can be (and often is) lost in this conversion.
 
   $mpfr = dd2mpfr($obj);
 
@@ -230,7 +252,7 @@
 
 =head1 ARITHMETIC IMPLEMENTATION
 
-  Operands are first converted to a 2098-bit value (Math::MPFR object).
+  Operands are first converted to a 2098-bit Math::MPFR object value.
   If the operand is a Math::FakeDD object then the conversion is exact.
   Else, the conversion might not be exact, depending upon the value.
   The result of the operation on the 2098-bit operand(s) will also be
