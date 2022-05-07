@@ -114,7 +114,7 @@ cmp_ok(Math::FakeDD->new()                          , '==', 0, "Math::FakeDD->ne
 # object passed to mpfr2dd() is 2098. Hence:
 
 my $mpfr_nan = Math::MPFR::Rmpfr_init2(2098);
-cmp_ok(Math::FakeDD::mpfr2dd($mpfr_nan), '==', 0, "Math::FakeDD->new(NaN) returns false");
+cmp_ok(mpfr2dd($mpfr_nan), '==', 0, "Math::FakeDD->new(NaN) returns false");
 
 my $atan1 = dd_atan2(0.5, '0.3');
 cmp_ok($atan1, '==', atan2(Math::FakeDD->new(0.5), Math::FakeDD->new('0.3')), "1: atan2 ok");
