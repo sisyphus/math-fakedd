@@ -178,6 +178,7 @@
   The following operations are currently overloaded:
    "", ==, !=, *, *=, **, **=, +, +=, -, -=, /, /=, <, <=, <=>, >, >=,
    abs, int, exp, log, sqrt,
+   bool, !,
    atan2, cos, sin
 
   Run
