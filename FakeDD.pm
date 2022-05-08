@@ -59,7 +59,8 @@ require Exporter;
   dd_gt dd_gte dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
   dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
   dd_sub dd_sub_eq
-  dd2mpfr mpfr2098 mpfr2dd mpfr_any_prec2dd
+  dd2mpfr mpfr2dd mpfr_any_prec2dd
+  printx sprintx unpackx
 );
 
 %Math::FakeDD::EXPORT_TAGS = (all =>[@Math::FakeDD::EXPORT_OK]);
@@ -272,6 +273,7 @@ sub dd_cmp {
   }
 
   return $rop1 <=> $rop2; # "<=>" is "Math::MPFR::overload_spaceship"
+                          # and will return undef if a NaN is involved.
 }
 
 sub dd_cos {
@@ -393,8 +395,9 @@ sub dd_eq {
   # third argument (which we CAN ignore) will be provided
   die "Wrong number of args passed to dd_eq()"
     if(@_ > 3);
-  return 0 if dd_cmp(shift, shift); # unequal
-  return 1;                         # equal
+  my $cmp = dd_cmp(shift, shift);
+  return 0 if $cmp || !defined $cmp; # not equal
+  return 1;                          # equal
 }
 
 sub dd_exp {
@@ -601,8 +604,9 @@ sub dd_neq {
   # third argument (which we CAN ignore) will be provided
   die "Wrong number of args passed to dd_neq()"
     if(@_ > 3);
-  return 1 if dd_cmp(shift, shift); # unequal
-  return 0;                         # equal
+  my $cmp = dd_cmp(shift, shift);
+  return 1 if $cmp || !defined $cmp; # not equal
+  return 0;                          # equal
 }
 
 sub dd_pow {
@@ -701,7 +705,9 @@ sub dd_spaceship {
   $correction = -1
     if (@_ == 3 && $_[2]);
 
-  return $correction * dd_cmp(shift, shift);
+  my $cmp = dd_cmp(shift, shift);
+  return $correction * $cmp if defined $cmp;
+  return $cmp;
 }
 
 sub dd_sqrt {
@@ -870,7 +876,7 @@ sub mpfr_any_prec2dd {
   my $prec_in = Rmpfr_get_prec($_[0]);
   my $mpfr_prec = $prec_in <= 2098 ? 2098 : $prec_in;
 
-  my $mpfr = Rmpfr_init2($prec_in);
+  my $mpfr = Rmpfr_init2($mpfr_prec);
   Rmpfr_set($mpfr, shift, MPFR_RNDN);
 
   my $msd = Rmpfr_get_d($mpfr, MPFR_RNDN);
@@ -879,7 +885,8 @@ sub mpfr_any_prec2dd {
     $h{lsd} = 0;
     return bless(\%h);
   }
-  $mpfr -= $msd;
+
+  Rmpfr_sub_d($mpfr, $mpfr, $msd, MPFR_RNDN);
   my $lsd = Rmpfr_get_d($mpfr, MPFR_RNDN);
   $h{msd} = $msd;
   $h{lsd} = $lsd;
@@ -995,6 +1002,26 @@ sub dd_inf {
 sub dd_nan {
   my %h = (msd => Rmpfr_get_d(Math::MPFR->new(), MPFR_RNDN), lsd => 0.0);
   return bless \%h;
+}
+
+sub printx {
+  print sprintx(shift);
+}
+
+sub sprintx {
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    my $self = shift;
+    return "[" . sprintf("%a", $self->{msd}) . " " . sprintf("%a", $self->{lsd}) . "]";
+  }
+  die "Wrong arg given to sprintx()";
+}
+
+sub unpackx {
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    my $self = shift;
+    return "[" . unpack("H*", pack("d>", $self->{msd})) . " " . unpack("H*", pack("d>", $self->{lsd})) . "]";
+  }
+  die "Wrong arg given to unpackx()";
 }
 
 1;
