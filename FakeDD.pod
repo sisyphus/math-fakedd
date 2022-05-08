@@ -145,23 +145,6 @@
 
 =head1 OUTPUT FUNCTIONS
 
-  $str = dd_stringify($obj);
-
-   Return a string that begins with "[" and ends with "]".
-   In between show, a space-delimited decimal string
-   representation of the more significant double followed by the
-   less significant double. Both doubles  will be shown in as few
-   digits as possible, while not losing any information.
-   The overloading of interpolation uses this function.
-
-  $str = dd_repro($obj); # "repro" short for "reproducible"
-
-   Display the value of $obj in scientific notation, using
-   as few decimal mantissa digits as possible. If this $str
-   is assigned to a new Math::FakeDD object, then the new
-   Math::FakeDD object will be identical to (ie a reproduction
-   of) the Math::FakeDD object from which $str was derived.
-
   $str = dd_dec($obj); # "dec" short for "decimalize"
 
    Display the exact value of $obj in scientific notation,
@@ -172,6 +155,40 @@
    $str was derived. However, the number of mantissa digits
    returned by dd_dec() will be >= (usually greater than) the
    number of mantissa digits returned by dd_repro().
+
+  $str = dd_repro($obj); # "repro" short for "reproducible"
+
+   Display the value of $obj in scientific notation, using
+   as few decimal mantissa digits as possible. If this $str
+   is assigned to a new Math::FakeDD object, then the new
+   Math::FakeDD object will be identical to (ie a reproduction
+   of) the Math::FakeDD object from which $str was derived.
+
+  $str = dd_stringify($obj);
+
+   Return a string that begins with "[" and ends with "]".
+   In between show, a space-delimited decimal string
+   representation of the more significant double followed by the
+   less significant double. Both doubles  will be shown in as few
+   digits as possible, while not losing any information.
+   The overloading of interpolation uses this function.
+
+  printx($obj);
+
+   Same as doing:
+     print(sprintx($obj)); # see below for sprintx documentation.
+
+  $str = sprintx($obj);
+
+   Same as dd_stringify($obj), except that the 2 doubles are
+   presented in hex ("%a") format, instead of decimal format.
+
+  $str = unpackx($obj);
+
+   Same as dd_stringify($obj), except that the 2 doubles have
+   each been unpacked into hex format by doing:
+
+     unpack "H*", pack "d>", $double;
 
 =head1 OPERATOR OVERLOADING
 
@@ -241,7 +258,7 @@
    precision Math::MPFR object $mpfr.
    No precision is lost in this conversion.
 
-  $mpfr = mpfr2098($in);
+  $mpfr = mpfr2098($in); # NOT exported; intended for internal use only.
 
    Return the value held by $in as the 2098-bit precision Math::MPFR
    object $mpfr.
