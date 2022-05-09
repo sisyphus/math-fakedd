@@ -7,7 +7,9 @@ use Config;
 
 use 5.022; # for $Config{longdblkind}
 
-use constant NV_IS_DOUBLE       => $Config{nvsize} == 8 ? 1 : 0;
+use constant NAN_COMPARE_BUG    => $Math::MPFR::VERSION < 4.23 ? 1 : 0;
+
+use constant NV_IS_DOUBLE       => $Config{nvsize} == 8        ? 1 : 0;
 
 use constant NV_IS_DOUBLEDOUBLE => $Config{nvsize} != 8 &&
                                    ($Config{longdblkind} >=5 && $Config{longdblkind} <= 8) ? 1 : 0;
@@ -56,9 +58,11 @@ require Exporter;
 @Math::FakeDD::EXPORT_OK = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
-  dd_gt dd_gte dd_int dd_log dd_lt dd_lte
-  dd_mul dd_mul_eq dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
+  dd_gt dd_gte dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
+  dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
   dd_sub dd_sub_eq
+  dd2mpfr mpfr2dd mpfr_any_prec2dd
+  printx sprintx unpackx
 );
 
 %Math::FakeDD::EXPORT_TAGS = (all =>[@Math::FakeDD::EXPORT_OK]);
@@ -133,6 +137,34 @@ sub dd_add {
 
   Rmpfr_add($rop1, $rop1, $rop2, MPFR_RNDN);
   return mpfr2dd($rop1);
+
+}
+
+sub dd_add_4196 {
+  # Used only in testing.
+  die "Wrong number of arguments given to dd_add()"
+    if @_ > 2;
+
+  my ($rop1, $rop2);
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop1 = dd2mpfr(shift);
+  }
+  else {
+    $rop1 = mpfr2098(shift);
+  }
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop2 = dd2mpfr(shift);
+  }
+  else {
+    $rop2 = mpfr2098(shift);
+  }
+
+  my $ret = Rmpfr_init2(4196);
+
+  Rmpfr_add($ret, $rop1, $rop2, MPFR_RNDN);
+  return mpfr_any_prec2dd($ret);
 
 }
 
@@ -243,6 +275,7 @@ sub dd_cmp {
   }
 
   return $rop1 <=> $rop2; # "<=>" is "Math::MPFR::overload_spaceship"
+                          # and will return undef if a NaN is involved.
 }
 
 sub dd_cos {
@@ -297,6 +330,34 @@ sub dd_div {
 
 }
 
+sub dd_div_4196 {
+  # Used only in testing.
+  die "Wrong number of arguments given to dd_div()"
+    if @_ > 2;
+
+  my ($rop1, $rop2);
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop1 = dd2mpfr(shift);
+  }
+  else {
+    $rop1 = mpfr2098(shift);
+  }
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop2 = dd2mpfr(shift);
+  }
+  else {
+    $rop2 = mpfr2098(shift);
+  }
+
+  my $ret = Rmpfr_init2(4196);
+
+  Rmpfr_div($ret, $rop1, $rop2, MPFR_RNDN);
+  return mpfr_any_prec2dd($ret);
+
+}
+
 sub dd_div_eq {
   # When dd_div_eq is called via overloading of '/=' a
   # third argument (which we CAN ignore) will be provided
@@ -336,8 +397,9 @@ sub dd_eq {
   # third argument (which we CAN ignore) will be provided
   die "Wrong number of args passed to dd_eq()"
     if(@_ > 3);
-  return 0 if dd_cmp(shift, shift); # unequal
-  return 1;                         # equal
+  my $cmp = dd_cmp(shift, shift);
+  return 0 if $cmp || !defined $cmp; # not equal
+  return 1;                          # equal
 }
 
 sub dd_exp {
@@ -477,6 +539,34 @@ sub dd_mul {
 
 }
 
+sub dd_mul_4196 {
+  # Used only in testing.
+  die "Wrong number of arguments given to dd_mul()"
+    if @_ > 2;
+
+  my ($rop1, $rop2);
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop1 = dd2mpfr(shift);
+  }
+  else {
+    $rop1 = mpfr2098(shift);
+  }
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop2 = dd2mpfr(shift);
+  }
+  else {
+    $rop2 = mpfr2098(shift);
+  }
+
+  my $ret = Rmpfr_init2(4196);
+
+  Rmpfr_mul($ret, $rop1, $rop2, MPFR_RNDN);
+  return mpfr_any_prec2dd($ret);
+
+}
+
 sub dd_mul_eq {
   # When dd_mul_eq is called via overloading of '*=' a
   # third argument (which we CAN ignore) will be provided
@@ -516,8 +606,9 @@ sub dd_neq {
   # third argument (which we CAN ignore) will be provided
   die "Wrong number of args passed to dd_neq()"
     if(@_ > 3);
-  return 1 if dd_cmp(shift, shift); # unequal
-  return 0;                         # equal
+  my $cmp = dd_cmp(shift, shift);
+  return 1 if $cmp || !defined $cmp; # not equal
+  return 0;                          # equal
 }
 
 sub dd_pow {
@@ -587,7 +678,33 @@ sub dd_pow_eq {
 sub dd_repro {
   die "Arg given to dd_repro() must be a Math::FakeDD object"
     unless ref($_[0]) eq 'Math::FakeDD';
-  return mpfrtoa(dd2mpfr(shift));
+
+  my $arg = shift;
+
+  return 'NaN' if dd_is_nan($arg);
+
+  if(dd_is_inf($arg)) {
+    return'Inf' if $arg > 0;
+    return'-Inf';
+  }
+
+  return '0.0' if $arg == 0;
+
+  my $neg = 0;
+  my $mpfr = dd2mpfr($arg);
+  if($mpfr < 0) {
+    Rmpfr_neg($mpfr, $mpfr, MPFR_RNDN);
+    $neg = 1;
+  }
+  my @v = Rmpfr_deref2($mpfr, 2, 0, MPFR_RNDN);
+
+  $v[0] =~ s/0+$//;
+  my $new_prec = length($v[0]) > 107 ? length($v[0]) : 107;
+
+  Rmpfr_prec_round($mpfr, $new_prec, MPFR_RNDN);
+
+  return '-' . mpfrtoa($mpfr) if $neg;
+  return mpfrtoa($mpfr);
 }
 
 sub dd_sin {
@@ -616,7 +733,17 @@ sub dd_spaceship {
   $correction = -1
     if (@_ == 3 && $_[2]);
 
-  return $correction * dd_cmp(shift, shift);
+  my($arg1, $arg2) = (shift, shift);
+
+  if(NAN_COMPARE_BUG) { # Fixed in Math-MPFR-4.23 and later.
+    if(dd_is_nan(Math::FakeDD->new($arg1)) || dd_is_nan(Math::FakeDD->new($arg2))) {
+      return undef;
+    }
+  }
+
+  my $cmp = dd_cmp($arg1, $arg2);
+  return $correction * $cmp if defined $cmp;
+  return $cmp;
 }
 
 sub dd_sqrt {
@@ -675,6 +802,33 @@ sub dd_sub {
 
   Rmpfr_sub($rop1, $rop1, $rop2, MPFR_RNDN);
   return mpfr2dd($rop1);
+}
+
+sub dd_sub_4196 {
+  # Used only in testing.
+  die "Wrong number of arguments given to dd_sub()"
+    if @_ > 2;
+
+  my ($rop1, $rop2);
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop1 = dd2mpfr(shift);
+  }
+  else {
+    $rop1 = mpfr2098(shift);
+  }
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    $rop2 = dd2mpfr(shift);
+  }
+  else {
+    $rop2 = mpfr2098(shift);
+  }
+
+  my $ret = Rmpfr_init2(4196);
+
+  Rmpfr_sub($ret, $rop1, $rop2, MPFR_RNDN);
+  return mpfr_any_prec2dd($ret);
 }
 
 sub dd_sub_eq {
@@ -747,6 +901,34 @@ sub mpfr2dd {
   return bless(\%h);
 }
 
+sub mpfr_any_prec2dd {
+  # Converts a Math::MPFR object of any
+  # precision to a Math::FakeDD object.
+  my %h;
+
+  die "Arg given to mpfr2dd() must be a Math::MPFR object"
+    unless ref($_[0]) eq 'Math::MPFR';
+
+  my $prec_in = Rmpfr_get_prec($_[0]);
+  my $mpfr_prec = $prec_in <= 2098 ? 2098 : $prec_in;
+
+  my $mpfr = Rmpfr_init2($mpfr_prec);
+  Rmpfr_set($mpfr, shift, MPFR_RNDN);
+
+  my $msd = Rmpfr_get_d($mpfr, MPFR_RNDN);
+  if($msd == 0 || $msd != $msd || $msd / $msd != 1) { # $msd is zero, nan, or inf.
+    $h{msd} = $msd;
+    $h{lsd} = 0;
+    return bless(\%h);
+  }
+
+  Rmpfr_sub_d($mpfr, $mpfr, $msd, MPFR_RNDN);
+  my $lsd = Rmpfr_get_d($mpfr, MPFR_RNDN);
+  $h{msd} = $msd;
+  $h{lsd} = $lsd;
+  return bless(\%h);
+}
+
 sub mpfr2098 {
   # Set the argument to a 2098-bit precision Math::MPFR object.
   my $ret = Rmpfr_init2(2098);
@@ -755,7 +937,7 @@ sub mpfr2098 {
   # Arg must be one of PV (string), IV (integer), UV (unsigned integer),
   # NV (perl floating point type) or Math::MPFR object.
 
-  die "Invalid arg passed internally to mpfr2098()"
+  die "Invalid arg ($itsa) passed internally to mpfr2098()"
     unless ($itsa > 0 && $itsa <= 4);
 
   my $arg = shift;
@@ -830,6 +1012,53 @@ sub dd_false {
   return 0;
 }
 
+sub dd_is_inf {
+  die "Not a Math::FakeDD object passed to dd_is_inf()"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  return 1 if Rmpfr_inf_p(Math::MPFR->new($_[0]->{msd}));
+  return 0;
+}
+
+sub dd_is_nan {
+  die "Not a Math::FakeDD object passed to dd_is_nan()"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  return 1 if Rmpfr_nan_p(Math::MPFR->new($_[0]->{msd}));
+  return 0;
+}
+
+sub dd_inf {
+  my $inf = Math::MPFR->new();
+  Rmpfr_set_inf($inf, defined($_[0]) ?  shift : 0); # Will be -Inf only if $_[0] < 0
+  my %h = (msd => Rmpfr_get_d($inf, MPFR_RNDN), lsd => 0.0);
+  return bless \%h;
+}
+
+sub dd_nan {
+  my %h = (msd => Rmpfr_get_d(Math::MPFR->new(), MPFR_RNDN), lsd => 0.0);
+  return bless \%h;
+}
+
+sub printx {
+  print sprintx(shift);
+}
+
+sub sprintx {
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    my $self = shift;
+    return "[" . sprintf("%a", $self->{msd}) . " " . sprintf("%a", $self->{lsd}) . "]";
+  }
+  die "Wrong arg given to sprintx()";
+}
+
+sub unpackx {
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    my $self = shift;
+    return "[" . unpack("H*", pack("d>", $self->{msd})) . " " . unpack("H*", pack("d>", $self->{lsd})) . "]";
+  }
+  die "Wrong arg given to unpackx()";
+}
 
 1;
 
