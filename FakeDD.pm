@@ -690,13 +690,20 @@ sub dd_repro {
 
   return '0.0' if $arg == 0;
 
+  my $neg = 0;
   my $mpfr = dd2mpfr($arg);
+  if($mpfr < 0) {
+    Rmpfr_neg($mpfr, $mpfr, MPFR_RNDN);
+    $neg = 1;
+  }
   my @v = Rmpfr_deref2($mpfr, 2, 0, MPFR_RNDN);
 
   $v[0] =~ s/0+$//;
-  my $new_prec = length($v[0]) > 53 ? length($v[0]) : 53;
+  my $new_prec = length($v[0]) > 107 ? length($v[0]) : 107;
 
   Rmpfr_prec_round($mpfr, $new_prec, MPFR_RNDN);
+
+  return '-' . mpfrtoa($mpfr) if $neg;
   return mpfrtoa($mpfr);
 }
 
