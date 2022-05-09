@@ -40,6 +40,7 @@ for(my $i = -300; $i <= 300; $i++) {
     my $dd_repro   = Math::FakeDD->new($repro);
     my $dd_decimal = Math::FakeDD->new($decimal);
 
+    cmp_ok($dd_repro, '==', $orig      , "string returned by dd_repro() assigns to original value");
     cmp_ok($dd_repro, '==', $dd_decimal, "exact decimal representation assigns correctly");
 
     cmp_ok($orig,      '==', abs($dd_repro * -1), "$str: abs() ok");
@@ -49,22 +50,34 @@ for(my $i = -300; $i <= 300; $i++) {
     my $check1 = Math::FakeDD->new($repro);
     cmp_ok($check1, '==', $orig, "$str: round trip achieved");
 
-    my @chop  = split /e/i, $str;
+    my @chop  = split /e/i, $repro;
     chop($chop[0]);
     next if $chop[0] =~ /\.$/;
-    $repro = $chop[0] . 'e' . $chop[1];
+
+    if(!defined($chop[1])) {
+      $repro = $chop[0];
+    }
+    else {
+      $repro = $chop[0] . 'e' . $chop[1];
+    }
 
     my $check2 = Math::FakeDD->new($repro);
     cmp_ok($check2, '!=', $orig, "$str: chop() alters value");
+    cmp_ok(abs($check2), '<', abs($orig), "$str: test value < original");
 
     next if $chop[0] =~ /9$/;
 
     ++substr($chop[0], -1); # round up the last digit.
 
-    $repro = $chop[0] . 'e' . $chop[1];
-
+    if(!defined($chop[1])) {
+      $repro = $chop[0];
+    }
+    else {
+      $repro = $chop[0] . 'e' . $chop[1];
+    }
     my $check3 = Math::FakeDD->new($repro);
     cmp_ok($check3, '!=', $orig, "$str: round-up alters value");
+    cmp_ok(abs($check3), '>', abs($orig), "$str: test value > original");
   }
 }
 
