@@ -7,7 +7,9 @@ use Config;
 
 use 5.022; # for $Config{longdblkind}
 
-use constant NV_IS_DOUBLE       => $Config{nvsize} == 8 ? 1 : 0;
+use constant NAN_COMPARE_BUG    => $Math::MPFR::VERSION < 4.23 ? 1 : 0;
+
+use constant NV_IS_DOUBLE       => $Config{nvsize} == 8        ? 1 : 0;
 
 use constant NV_IS_DOUBLEDOUBLE => $Config{nvsize} != 8 &&
                                    ($Config{longdblkind} >=5 && $Config{longdblkind} <= 8) ? 1 : 0;
@@ -676,7 +678,26 @@ sub dd_pow_eq {
 sub dd_repro {
   die "Arg given to dd_repro() must be a Math::FakeDD object"
     unless ref($_[0]) eq 'Math::FakeDD';
-  return mpfrtoa(dd2mpfr(shift));
+
+  my $arg = shift;
+
+  return 'NaN' if dd_is_nan($arg);
+
+  if(dd_is_inf($arg)) {
+    return'Inf' if $arg > 0;
+    return'-Inf';
+  }
+
+  return '0.0' if $arg == 0;
+
+  my $mpfr = dd2mpfr($arg);
+  my @v = Rmpfr_deref2($mpfr, 2, 0, MPFR_RNDN);
+
+  $v[0] =~ s/0+$//;
+  my $new_prec = length($v[0]) > 53 ? length($v[0]) : 53;
+
+  Rmpfr_prec_round($mpfr, $new_prec, MPFR_RNDN);
+  return mpfrtoa($mpfr);
 }
 
 sub dd_sin {
@@ -705,7 +726,15 @@ sub dd_spaceship {
   $correction = -1
     if (@_ == 3 && $_[2]);
 
-  my $cmp = dd_cmp(shift, shift);
+  my($arg1, $arg2) = (shift, shift);
+
+  if(NAN_COMPARE_BUG) { # Fixed in Math-MPFR-4.23 and later.
+    if(dd_is_nan(Math::FakeDD->new($arg1)) || dd_is_nan(Math::FakeDD->new($arg2))) {
+      return undef;
+    }
+  }
+
+  my $cmp = dd_cmp($arg1, $arg2);
   return $correction * $cmp if defined $cmp;
   return $cmp;
 }
@@ -901,7 +930,7 @@ sub mpfr2098 {
   # Arg must be one of PV (string), IV (integer), UV (unsigned integer),
   # NV (perl floating point type) or Math::MPFR object.
 
-  die "Invalid arg passed internally to mpfr2098()"
+  die "Invalid arg ($itsa) passed internally to mpfr2098()"
     unless ($itsa > 0 && $itsa <= 4);
 
   my $arg = shift;
