@@ -40,6 +40,9 @@
               # Otherwise outputs [0.1 -5.551115123125783e-18], same
               # as for string arg of '0.1'.
 
+  Generally, providing a string argument will DWYW, whereas providing a
+  floating-point (NV) argument won't.
+
   NOTES: In the following documentation:
 
    "$arg", "$arg1", "$arg2", etc. are arguments that can be either a
