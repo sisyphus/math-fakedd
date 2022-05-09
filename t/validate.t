@@ -18,15 +18,19 @@ use Math::FakeDD qw(:all);
 use Test::More;
 
 for(my $i = -300; $i <= 300; $i++) {
-  for(1..3) {
+  for my $run (1..6) {
     my $input = rand();
 
     while(length($input) > 19) { chop $input }
     while($input =~ /0$/) { chop $input }
 
     my $str = "$input" . "e" . $i;
+    $str = '-' . $str if $run & 1;
 
     my $orig = Math::FakeDD->new($str);
+
+    ## Currently exclude values less that 2 ** -968 - TODO
+    next if abs($orig) < 2 ** -968;
     my $repro = dd_repro($orig);
     my $decimal = dd_dec($orig);
 
@@ -43,7 +47,12 @@ for(my $i = -300; $i <= 300; $i++) {
     cmp_ok($dd_repro, '==', $orig      , "string returned by dd_repro() assigns to original value");
     cmp_ok($dd_repro, '==', $dd_decimal, "exact decimal representation assigns correctly");
 
-    cmp_ok($orig,      '==', abs($dd_repro * -1), "$str: abs() ok");
+    if($orig > 0) {
+      cmp_ok($orig,      '==', abs($dd_repro * -1), "$str: abs() ok");
+    }
+    else {
+      cmp_ok(abs($orig),      '==', abs($dd_repro * -1), "$str: abs() ok");
+    }
     my $t = int(Math::FakeDD->new($repro));
     cmp_ok(int($orig), '==', $t                 , "$str: int() ok");
 
