@@ -133,8 +133,9 @@ my $nan = Math::FakeDD->new('nan');
 cmp_ok($nan                                   , '!=', $nan               , "NaN != NaN");
 cmp_ok($nan                                   , '!=', Math::FakeDD->new(), "NaN != 0");
 cmp_ok(defined($nan <=> Math::FakeDD->new(1)), '==', 0, "1: NaN with spaceship op returns undef");
-print "\$nan: $nan\n";
+
 cmp_ok(defined(Math::FakeDD->new(1) <=> $nan), '==', 0, "2: NaN with spaceship op returns undef");
+
 
 
 done_testing();
