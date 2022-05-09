@@ -1,6 +1,9 @@
 Revision history for Perl module Math::FakeDD
 
 0.02
+ - Add (and export) dd_inf, dd_nan, dd_is_inf, dd_is_nan, sprintx, printx, unpackx.
+ - Export dd2mpfr, mpfr2dd.
+ - Fix dd_repro().
 
 0.01
  - First release
