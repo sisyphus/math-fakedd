@@ -28,10 +28,12 @@ cmp_ok(dd_repro(Math::FakeDD->new(-1)), 'eq', '-1.0', "dd_repro stringifies -1 a
 cmp_ok(dd_repro(Math::FakeDD->new(8)) , 'eq', '8.0' , "dd_repro stringifies 8  as 8.0" );
 cmp_ok(dd_repro(Math::FakeDD->new(-8)), 'eq', '-8.0', "dd_repro stringifies -8 as -8.0");
 
+cmp_ok(dd_hex(Math::FakeDD->new())  , 'eq', '0x0p+0' , "dd_dec stringifies 0 as 0x0p+0" );
 cmp_ok(dd_hex(dd_nan())  , 'eq', 'NaN' , "dd_hex stringifies NaN  as NaN" );
 cmp_ok(dd_hex(dd_inf())  , 'eq', 'Inf' , "dd_hex stringifies +Inf as Inf" );
 cmp_ok(dd_hex(dd_inf(-1)), 'eq', '-Inf', "dd_hex stringifies -Inf as -Inf");
 
+cmp_ok(dd_dec(Math::FakeDD->new())  , 'eq', '0.0' , "dd_dec stringifies 0 as 0.0" );
 cmp_ok(dd_dec(dd_nan())  , 'eq', 'NaN' , "dd_dec stringifies NaN  as NaN" );
 cmp_ok(dd_dec(dd_inf())  , 'eq', 'Inf' , "dd_dec stringifies +Inf as Inf" );
 cmp_ok(dd_dec(dd_inf(-1)), 'eq', '-Inf', "dd_dec stringifies -Inf as -Inf");
