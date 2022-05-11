@@ -58,8 +58,8 @@ require Exporter;
 @Math::FakeDD::EXPORT_OK = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
-  dd_gt dd_gte dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
-  dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
+  dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
+  dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_reprox dd_sin dd_spaceship dd_sqrt dd_stringify
   dd_sub dd_sub_eq
   dd2mpfr mpfr2dd mpfr_any_prec2dd
   printx sprintx unpackx
@@ -296,7 +296,18 @@ sub dd_cos {
 sub dd_dec {
   die "Wrong arg given to dd_dec()"
     unless ref($_[0]) eq 'Math::FakeDD';
-  return decimalize(dd2mpfr(shift));
+  my $mpfr = dd2mpfr(shift);
+
+  if(!Rmpfr_regular_p($mpfr)) {
+    return '0x0+0'   if Rmpfr_zero_p($mpfr);
+    return 'NaN' if Rmpfr_nan_p($mpfr);
+
+    # must be an inf
+    return 'Inf' if $mpfr > 0;
+    return '-Inf';
+  }
+
+  return decimalize($mpfr);
 }
 
 sub dd_div {
@@ -445,6 +456,27 @@ sub dd_gte {
 
   return 0 if $correction * dd_cmp(shift, shift) < 0; # less than
   return 1;                                           # greater than or equal
+}
+
+sub dd_hex {
+  die "Wrong arg given to dd_dec()"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  my $mpfr = dd2mpfr(shift);
+
+  if(!Rmpfr_regular_p($mpfr)) {
+    return '0x0+0'   if Rmpfr_zero_p($mpfr);
+    return 'NaN' if Rmpfr_nan_p($mpfr);
+
+    # must be an inf
+    return 'Inf' if $mpfr > 0;
+    return '-Inf';
+  }
+
+  my $buffer;
+  Rmpfr_sprintf($buffer, "%Ra", $mpfr, 528);
+
+  return $buffer;
 }
 
 sub dd_int {
@@ -705,6 +737,16 @@ sub dd_repro {
 
   return '-' . mpfrtoa($mpfr) if $neg;
   return mpfrtoa($mpfr);
+}
+
+sub dd_reprox {
+  my $decimal = dd_repro(shift);
+
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_set_str($mpfr, $decimal, 10, MPFR_RNDN);
+
+  return Rmpfr_get_str($mpfr, 16, 0, MPFR_RNDN);
+
 }
 
 sub dd_sin {
