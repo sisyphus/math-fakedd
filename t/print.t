@@ -27,6 +27,8 @@ cmp_ok(dd_repro(Math::FakeDD->new(1)) , 'eq', '1.0' , "dd_repro stringifies 1  a
 cmp_ok(dd_repro(Math::FakeDD->new(-1)), 'eq', '-1.0', "dd_repro stringifies -1 as -1.0");
 cmp_ok(dd_repro(Math::FakeDD->new(8)) , 'eq', '8.0' , "dd_repro stringifies 8  as 8.0" );
 cmp_ok(dd_repro(Math::FakeDD->new(-8)), 'eq', '-8.0', "dd_repro stringifies -8 as -8.0");
+cmp_ok(dd_repro(Math::FakeDD->new(512)) , 'eq', '512.0' , "dd_repro stringifies 512 as 512.0" );
+cmp_ok(dd_repro(Math::FakeDD->new(-512)), 'eq', '-512.0', "dd_repro stringifies -512 as -512.0");
 
 cmp_ok(dd_hex(Math::FakeDD->new())  , 'eq', '0x0p+0' , "dd_dec stringifies 0 as 0x0p+0" );
 cmp_ok(dd_hex(dd_nan())  , 'eq', 'NaN' , "dd_hex stringifies NaN  as NaN" );
