@@ -34,7 +34,7 @@ my $m2 = Math::MPFR::Rmpfr_init2(2112);
 my $skips = 0;
 my $its = 1600;
 
-for(1 .. 1000) {
+for(1 .. $its) {
  my $s = '1.' . ('0' x 1067) . randbin(10);
 
  Math::MPFR::Rmpfr_set_str($m1, $s, 2, 0);
@@ -46,7 +46,10 @@ for(1 .. 1000) {
 
  cmp_ok($first, '==', Math::FakeDD->new(Math::MPFR::decimalize($m1)), "mpfr_any_prec2dd agrees with new()");
 
- if(substr($s, -20, 17) !~ /1/) { $skips++ } # lsd should be zero
+ if(substr($s, -20, 17) !~ /1/) {
+   cmp_ok($first->{lsd}, '<=', 2 ** -1073, "less significant double <= DBL_DENORM_MIN");
+   $skips++;
+ }
  else {
    cmp_ok($first->{lsd}, '!=', 0, "less significant double is not 0");
  }
