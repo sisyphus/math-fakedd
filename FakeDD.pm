@@ -59,7 +59,7 @@ require Exporter;
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
-  dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_reprox dd_sin dd_spaceship dd_sqrt dd_stringify
+  dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
   dd_sub dd_sub_eq
   dd2mpfr mpfr2dd mpfr_any_prec2dd
   printx sprintx unpackx
@@ -732,7 +732,8 @@ sub dd_repro {
 
   $v[0] =~ s/0+$//;
 
-  if($arg->{lsd} == 0) {
+  if($arg->{lsd} == 0 && abs($arg->{msd}) >= 2 ** -1022) {
+    # msd is NOT subnormal
     Rmpfr_prec_round($mpfr, 53, MPFR_RNDN);
   }
   else {
@@ -741,16 +742,6 @@ sub dd_repro {
 
   return '-' . mpfrtoa($mpfr) if $neg;
   return mpfrtoa($mpfr);
-}
-
-sub dd_reprox {
-  my $decimal = dd_repro(shift);
-
-  my $mpfr = Rmpfr_init2(2098);
-  Rmpfr_set_str($mpfr, $decimal, 10, MPFR_RNDN);
-
-  return Rmpfr_get_str($mpfr, 16, 0, MPFR_RNDN);
-
 }
 
 sub dd_sin {
