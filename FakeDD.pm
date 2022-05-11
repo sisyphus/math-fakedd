@@ -731,9 +731,13 @@ sub dd_repro {
   my @v = Rmpfr_deref2($mpfr, 2, 0, MPFR_RNDN);
 
   $v[0] =~ s/0+$//;
-  my $new_prec = length($v[0]) > 107 ? length($v[0]) : 107;
 
-  Rmpfr_prec_round($mpfr, $new_prec, MPFR_RNDN);
+  if($arg->{lsd} == 0) {
+    Rmpfr_prec_round($mpfr, 53, MPFR_RNDN);
+  }
+  else {
+    Rmpfr_prec_round($mpfr, length($v[0]), MPFR_RNDN);
+  }
 
   return '-' . mpfrtoa($mpfr) if $neg;
   return mpfrtoa($mpfr);
