@@ -150,8 +150,8 @@
 
   $str = dd_dec($obj); # "dec" short for "decimalize"
 
-   Display the exact value of $obj in scientific notation,
-   using as many digits as required to provide that exactness.
+   Represent the *exact* value of $obj in scientific notation,
+   using as few digits as required to provide that exactness.
    As with dd_repro(), if this $str is assigned to a new
    Math::FakeDD object, then the new Math::FakeDD object will
    be identical to the Math::FakeDD object from which this
@@ -159,13 +159,22 @@
    returned by dd_dec() will be >= (usually greater than) the
    number of mantissa digits returned by dd_repro().
 
+  $str = dd_hex($obj);
+
+   As for dd_dec(), except that the value placed in $str is in
+   hex ("%a") format.
+
+
   $str = dd_repro($obj); # "repro" short for "reproducible"
 
-   Display the value of $obj in scientific notation, using
-   as few decimal mantissa digits as possible. If this $str
-   is assigned to a new Math::FakeDD object, then the new
-   Math::FakeDD object will be identical to (ie a reproduction
+   Represent the value of $obj in decimal scientific notation,
+   using as few decimal mantissa digits as possible, such that if
+   this $str is assigned to a new Math::FakeDD object, then the
+   new Math::FakeDD object will be identical to (ie a reproduction
    of) the Math::FakeDD object from which $str was derived.
+
+   NOTE: This representation, unlike that provided by dd_dec()
+         and dd_hex(), might not represent the value *exactly*.
 
   $str = dd_stringify($obj);
 
