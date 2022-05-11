@@ -28,6 +28,34 @@ cmp_ok(dd_repro(Math::FakeDD->new(-1)), 'eq', '-1.0', "dd_repro stringifies -1 a
 cmp_ok(dd_repro(Math::FakeDD->new(8)) , 'eq', '8.0' , "dd_repro stringifies 8  as 8.0" );
 cmp_ok(dd_repro(Math::FakeDD->new(-8)), 'eq', '-8.0', "dd_repro stringifies -8 as -8.0");
 
+cmp_ok(dd_hex(dd_nan())  , 'eq', 'NaN' , "dd_hex stringifies NaN  as NaN" );
+cmp_ok(dd_hex(dd_inf())  , 'eq', 'Inf' , "dd_hex stringifies +Inf as Inf" );
+cmp_ok(dd_hex(dd_inf(-1)), 'eq', '-Inf', "dd_hex stringifies -Inf as -Inf");
+
+cmp_ok(dd_dec(dd_nan())  , 'eq', 'NaN' , "dd_dec stringifies NaN  as NaN" );
+cmp_ok(dd_dec(dd_inf())  , 'eq', 'Inf' , "dd_dec stringifies +Inf as Inf" );
+cmp_ok(dd_dec(dd_inf(-1)), 'eq', '-Inf', "dd_dec stringifies -Inf as -Inf");
+
+for(0, '256.125', '0.1', '-1.3', 0.14 / 10) {
+  my $hex = dd_hex(Math::FakeDD->new($_));
+  cmp_ok(Math::FakeDD->new($hex), '==', Math::FakeDD->new($_), "dd_hex() ok with '$_'");
+}
+
+for(1 .. 1000) {
+  my $sign = '';
+  $sign = '-' unless $_ % 5;
+  my $s0 = rand(),
+  my $e = 'e';
+  $e = 'e-'if $_ % 3;
+  my $pow = int(rand(100));
+
+  my $str = $sign . $s0 . $e . $pow;
+
+  my $n = Math::FakeDD->new($str);
+  my $hex = dd_hex($n);
+
+  cmp_ok(dd_hex(Math::FakeDD->new($hex)), '==', $n, "dd_hex() ok with '$str'");
+}
 
 done_testing();
 
