@@ -299,7 +299,7 @@ sub dd_dec {
   my $mpfr = dd2mpfr(shift);
 
   if(!Rmpfr_regular_p($mpfr)) {
-    return '0x0+0'   if Rmpfr_zero_p($mpfr);
+    return '0.0'   if Rmpfr_zero_p($mpfr);
     return 'NaN' if Rmpfr_nan_p($mpfr);
 
     # must be an inf
@@ -465,7 +465,7 @@ sub dd_hex {
   my $mpfr = dd2mpfr(shift);
 
   if(!Rmpfr_regular_p($mpfr)) {
-    return '0x0+0'   if Rmpfr_zero_p($mpfr);
+    return '0x0p+0'   if Rmpfr_zero_p($mpfr);
     return 'NaN' if Rmpfr_nan_p($mpfr);
 
     # must be an inf
