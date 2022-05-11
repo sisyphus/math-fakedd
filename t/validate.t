@@ -122,5 +122,8 @@ cmp_ok(dd_repro($fudd1), 'eq', '1e-323', "dd_repro displays '1e-323' for 2 ** -1
 $fudd1 += 2 ** -1068;
 cmp_ok(dd_repro($fudd1), 'eq', '2.36e-322', "dd_repro displays '2.36e-322' for (2 ** -1068)+(2 ** -1073)");
 
+dd_assign($fudd1, 2 ** -1022);
+cmp_ok(dd_repro($fudd1), 'eq', '2.2250738585072014e-308', "dd_repro displays DBL_MIN as '2.2250738585072014e-308'");
+
 done_testing();
 
