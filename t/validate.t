@@ -12,10 +12,14 @@
 #
 # Also run some basic sanity tests of int() and abs().
 
+# DBL_MIN = 2.2250738585072014e-308 = 2 ** -1022
+
 use strict;
 use warnings;
 use Math::FakeDD qw(:all);
 use Test::More;
+
+my $dbl_min = 2 ** -1022;
 
 for(my $i = -300; $i <= 300; $i++) {
   for my $run (1..6) {
@@ -29,10 +33,9 @@ for(my $i = -300; $i <= 300; $i++) {
 
     my $orig = Math::FakeDD->new($str);
 
-    ## Currently exclude values less that 2 ** -968 - TODO
-    next if abs($orig) < 2 ** -968;
-    my $repro = dd_repro($orig);
-    my $decimal = dd_dec($orig);
+    my $repro   = dd_repro($orig);
+    my $decimal = dd_dec  ($orig);
+    my $hex     = dd_hex  ($orig);
 
     if($orig < 1 && $orig > -1) {
       cmp_ok(int($orig), '==', 0, "int() expected to return a value of 0");
@@ -43,9 +46,11 @@ for(my $i = -300; $i <= 300; $i++) {
 
     my $dd_repro   = Math::FakeDD->new($repro);
     my $dd_decimal = Math::FakeDD->new($decimal);
+    my $dd_hex     = Math::FakeDD->new($hex);
 
     cmp_ok($dd_repro, '==', $orig      , "string returned by dd_repro() assigns to original value");
     cmp_ok($dd_repro, '==', $dd_decimal, "exact decimal representation assigns correctly");
+    cmp_ok($dd_hex  , '==', $dd_decimal, "dd_hex() and dd_dec() assign to same value");
 
     if($orig > 0) {
       cmp_ok($orig,      '==', abs($dd_repro * -1), "$str: abs() ok");
@@ -89,6 +94,23 @@ for(my $i = -300; $i <= 300; $i++) {
     cmp_ok(abs($check3), '>', abs($orig), "$str: test value > original");
   }
 }
+
+my $big =    (2 ** 140)   + (2 ** 100);
+my $little = (2 ** -1000) + (2 ** -1019);
+
+my $fudd1 = Math::FakeDD->new($big) + $little;
+my $fudd2 = Math::FakeDD->new($big) - $little;
+
+cmp_ok($fudd1, '>', $big, "big + little > big");
+cmp_ok($fudd2, '<', $big, "big - little < big");
+
+my $fudd3 = Math::FakeDD->new(dd_repro($fudd1));
+my $fudd4 = Math::FakeDD->new(dd_repro($fudd2));
+
+cmp_ok($fudd3, '==', $fudd1, "+: round trip ok");
+cmp_ok($fudd4, '==', $fudd2, "-: round trip ok");
+
+warn dd_repro($fudd1), "\n", dd_repro($fudd3), "\n";
 
 done_testing();
 
