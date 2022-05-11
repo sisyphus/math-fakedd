@@ -95,8 +95,8 @@ for(my $i = -300; $i <= 300; $i++) {
   }
 }
 
-my $big =    (2 ** 140)   + (2 ** 100);
-my $little = (2 ** -1000) + (2 ** -1019);
+my $big =    (2 ** 140)   + (2 ** 100);   # dd_repro() needs to use prec of 1194 bits
+my $little = (2 ** -1000) + (2 ** -1019); # dd_repro() needs to use prec of 1194 bits
 
 my $fudd1 = Math::FakeDD->new($big) + $little;
 my $fudd2 = Math::FakeDD->new($big) - $little;
@@ -110,7 +110,17 @@ my $fudd4 = Math::FakeDD->new(dd_repro($fudd2));
 cmp_ok($fudd3, '==', $fudd1, "+: round trip ok");
 cmp_ok($fudd4, '==', $fudd2, "-: round trip ok");
 
-warn dd_repro($fudd1), "\n", dd_repro($fudd3), "\n";
+dd_assign($fudd1, 2 ** -1075);
+cmp_ok(dd_repro($fudd1), 'eq', '0.0', "dd_repro displays '0.0' for 2 ** -1075");
+
+dd_assign($fudd1, 2 ** -1074);
+cmp_ok(dd_repro($fudd1), 'eq', '5e-324', "dd_repro displays '5e-324' for 2 ** -1074");
+
+dd_assign($fudd1, 2 ** -1073);
+cmp_ok(dd_repro($fudd1), 'eq', '1e-323', "dd_repro displays '1e-323' for 2 ** -1073");
+
+$fudd1 += 2 ** -1068;
+cmp_ok(dd_repro($fudd1), 'eq', '2.36e-322', "dd_repro displays '2.36e-322' for (2 ** -1068)+(2 ** -1073)");
 
 done_testing();
 
