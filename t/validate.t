@@ -95,11 +95,11 @@ for(my $i = -300; $i <= 300; $i++) {
   }
 }
 
-my $big =    (2 ** 140)   + (2 ** 100);   # dd_repro() needs to use prec of 1194 bits
-my $little = (2 ** -1000) + (2 ** -1019); # dd_repro() needs to use prec of 1194 bits
+my $big =    (2 ** 140)   + (2 ** 100);
+my $little = (2 ** -1000) + (2 ** -1019);
 
-my $fudd1 = Math::FakeDD->new($big) + $little;
-my $fudd2 = Math::FakeDD->new($big) - $little;
+my $fudd1 = Math::FakeDD->new($big) + $little; # dd_repro() needs to use prec of 1194 bits
+my $fudd2 = Math::FakeDD->new($big) - $little; # dd_repro() needs to use prec of 1194 bits
 
 cmp_ok($fudd1, '>', $big, "big + little > big");
 cmp_ok($fudd2, '<', $big, "big - little < big");
@@ -111,19 +111,31 @@ cmp_ok($fudd3, '==', $fudd1, "+: round trip ok");
 cmp_ok($fudd4, '==', $fudd2, "-: round trip ok");
 
 dd_assign($fudd1, 2 ** -1075);
-cmp_ok(dd_repro($fudd1), 'eq', '0.0', "dd_repro displays '0.0' for 2 ** -1075");
+cmp_ok(dd_repro($fudd1), 'eq', '0.0', "dd_repro returns '0.0' for 2 ** -1075");
 
 dd_assign($fudd1, 2 ** -1074);
-cmp_ok(dd_repro($fudd1), 'eq', '5e-324', "dd_repro displays '5e-324' for 2 ** -1074");
+cmp_ok(dd_repro($fudd1), 'eq', '5e-324', "dd_repro returns '5e-324' for 2 ** -1074");
 
 dd_assign($fudd1, 2 ** -1073);
 cmp_ok(dd_repro($fudd1), 'eq', '1e-323', "dd_repro displays '1e-323' for 2 ** -1073");
 
 $fudd1 += 2 ** -1068;
-cmp_ok(dd_repro($fudd1), 'eq', '2.36e-322', "dd_repro displays '2.36e-322' for (2 ** -1068)+(2 ** -1073)");
+cmp_ok(dd_repro($fudd1), 'eq', '3.26e-322', "dd_repro returns '3.26e-322' for (2 ** -1068)+(2 ** -1073)");
 
 dd_assign($fudd1, 2 ** -1022);
-cmp_ok(dd_repro($fudd1), 'eq', '2.2250738585072014e-308', "dd_repro displays DBL_MIN as '2.2250738585072014e-308'");
+cmp_ok(dd_repro($fudd1), 'eq', '2.2250738585072014e-308', "dd_repro returns DBL_MIN as '2.2250738585072014e-308'");
+
+dd_assign($fudd1, 2 ** -1021);
+cmp_ok(dd_repro($fudd1), 'eq', '4.450147717014403e-308', "dd_repro returns 2 ** -1021 as '4.450147717014403e-308'");
+
+$fudd1 += 2 ** -1020;
+cmp_ok(dd_repro($fudd1), 'eq', '1.3350443151043208e-307', "dd_repro '1.3350443151043208e-307' for (2 ** -1020)+(2 ** -1021)");
+
+dd_assign($fudd1, (2 ** -1021) + (2 ** -1064)) ;
+cmp_ok(dd_repro($fudd1), 'eq', '4.450147717014909e-308', "dd_repro '4.450147717014909e-308' for (2 ** -1021)+(2 ** -1064)");
+
+dd_assign($fudd1, '0.59374149305888224e17');
+cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.59374149305888224e17' ok");
 
 done_testing();
 
