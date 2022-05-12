@@ -61,7 +61,7 @@ require Exporter;
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
   dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
   dd_sub dd_sub_eq
-  dd2mpfr mpfr2dd mpfr_any_prec2dd
+  dd2mpfr mpfr2dd mpfr_any_prec2dd mpfr2098
   printx sprintx unpackx
 );
 
@@ -730,14 +730,45 @@ sub dd_repro {
   }
   my @v = Rmpfr_deref2($mpfr, 2, 0, MPFR_RNDN);
 
-  $v[0] =~ s/0+$//;
-
-  if($arg->{lsd} == 0 && abs($arg->{msd}) >= 2 ** -1022) {
-    # msd is NOT subnormal
-    Rmpfr_prec_round($mpfr, 53, MPFR_RNDN);
+  if($arg->{lsd} == 0) {
+    if(abs($arg->{msd}) >= 2 ** -1022) {
+      # msd is NOT subnormal, so use 53-bit precision.
+      Rmpfr_prec_round($mpfr, 53, MPFR_RNDN); # no loss of information
+                                              # is incurred.
+    }
+    else {
+      # msd is subnormal; $v[1] is the exponent and, with the
+      # mpfr library, will be in the range (-1022 .. -1073)
+      Rmpfr_prec_round($mpfr, $v[1] + 1074, MPFR_RNDN);
+    }
   }
   else {
-    Rmpfr_prec_round($mpfr, length($v[0]), MPFR_RNDN);
+    $v[0] =~ s/0+$//; # remove all trailing zeroes
+    my $m_lsd = Rmpfr_init2(53);
+    Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
+
+    my @v_lsd = Rmpfr_deref2($m_lsd, 2, 0, MPFR_RNDN);
+    $v_lsd[0] =~ s/0+$//; # remove all trailing zeroes
+    my $v_lsd_len = length($v_lsd[0]);
+    my $correction = 0;
+
+    # $correction will be altered to the pertinent +ve
+    # value (below) when length($v[0]) is understating
+    # the required precision.
+
+    if(abs($arg->{lsd}) >= 2 ** -1022) {
+      # lsd is NOT subnormal
+      $correction = 53 - $v_lsd_len
+         if $v_lsd_len < 53;
+    }
+    else {
+      # lsd is subnormal
+      $correction = $v_lsd[1] + 1074 - $v_lsd_len
+        if $v_lsd_len < $v_lsd[1] + 1074;
+
+    }
+
+    Rmpfr_prec_round($mpfr, length($v[0]) + $correction, MPFR_RNDN);
   }
 
   return '-' . mpfrtoa($mpfr) if $neg;
@@ -931,7 +962,7 @@ sub mpfr2dd {
     $h{lsd} = 0;
     return bless(\%h);
   }
-  $mpfr -= $msd;
+  Rmpfr_sub_d($mpfr, $mpfr, $msd, MPFR_RNDN);
   my $lsd = Rmpfr_get_d($mpfr, MPFR_RNDN);
   $h{msd} = $msd;
   $h{lsd} = $lsd;
