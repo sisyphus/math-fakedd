@@ -270,7 +270,7 @@
    precision Math::MPFR object $mpfr.
    No precision is lost in this conversion.
 
-  $mpfr = mpfr2098($in); # NOT exported; intended for internal use only.
+  $mpfr = mpfr2098($in);
 
    Return the value held by $in as the 2098-bit precision Math::MPFR
    object $mpfr.
