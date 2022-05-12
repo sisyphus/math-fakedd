@@ -137,5 +137,11 @@ cmp_ok(dd_repro($fudd1), 'eq', '4.450147717014909e-308', "dd_repro '4.4501477170
 dd_assign($fudd1, '0.59374149305888224e17');
 cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.59374149305888224e17' ok");
 
+dd_assign($fudd1, '0.94562172840506875e15');
+cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.94562172840506875e15' ok");
+
+dd_assign($fudd1, '0.59951823306102625e15');
+cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.59951823306102625e15' ok");
+
 done_testing();
 
