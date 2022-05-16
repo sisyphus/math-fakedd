@@ -134,13 +134,28 @@ cmp_ok(dd_repro($fudd1), 'eq', '1.3350443151043208e-307', "dd_repro '1.335044315
 dd_assign($fudd1, (2 ** -1021) + (2 ** -1064)) ;
 cmp_ok(dd_repro($fudd1), 'eq', '4.450147717014909e-308', "dd_repro '4.450147717014909e-308' for (2 ** -1021)+(2 ** -1064)");
 
-dd_assign($fudd1, '0.59374149305888224e17');
+dd_assign($fudd1, '0.59374149305888224e17'); # mpfr_dump() exponent == 56
 cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.59374149305888224e17' ok");
 
-dd_assign($fudd1, '0.94562172840506875e15');
+dd_assign($fudd1, '0.0605815825720235e15');  # mpfr_dump() exponent == 46
+cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.0605815825720235e15' ok");
+
+dd_assign($fudd1, '0.32264564579955e13');    # mpfr_dump() exponent == 42
+cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.32264564579955e13' ok");
+
+dd_assign($fudd1, '0.217045016575725e14');   # mpfr_dump() exponent == 45
+cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.217045016575725e14' ok");
+
+dd_assign($fudd1, '0.920640108967635e14');   # mpfr_dump() exponent == 47
+cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.920640108967635e14' ok");
+
+dd_assign($fudd1, '0.26580405907862925e15'); # mpfr_dump() exponent == 48
+cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.26580405907862925e15' ok");
+
+dd_assign($fudd1, '0.94562172840506875e15'); # mpfr_dump() exponent == 50
 cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.94562172840506875e15' ok");
 
-dd_assign($fudd1, '0.59951823306102625e15');
+dd_assign($fudd1, '0.59951823306102625e15'); # mpfr_dump() exponent == 50
 cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.59951823306102625e15' ok");
 
 done_testing();
