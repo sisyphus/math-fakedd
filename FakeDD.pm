@@ -733,19 +733,14 @@ sub dd_repro {
   if($arg->{lsd} == 0) {
     if(abs($arg->{msd}) >= 2 ** -1022) {
       # msd is NOT subnormal, so use 53-bit precision
-      # or 106-bit precision if exponent > 53.
-      my $rounding = 53;
-      my $exp = Rmpfr_get_exp($mpfr);
-      $rounding = $exp
-        if($exp > 53 && $exp <= 107);
-
-      Rmpfr_prec_round($mpfr, $rounding, MPFR_RNDN); # no loss of information
-                                              # is incurred.
+      Rmpfr_prec_round($mpfr, 53, MPFR_RNDN)
+        if Rmpfr_get_exp($mpfr) <= 0;
     }
     else {
-      # msd is subnormal; $v[1] is the exponent and, with the
-      # mpfr library, will be in the range (-1022 .. -1073)
-      Rmpfr_prec_round($mpfr, $v[1] + 1074, MPFR_RNDN);
+      # msd is subnormal; the exponent, with the mpfr
+      # library, will be in the range (-1022 .. -1073)
+      # Rmpfr_prec_round($mpfr, $v[1] + 1074, MPFR_RNDN);
+      Rmpfr_prec_round($mpfr, Rmpfr_get_exp($mpfr) + 1074, MPFR_RNDN);
     }
   }
   else {
