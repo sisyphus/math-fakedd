@@ -67,7 +67,7 @@ require Exporter;
 
 %Math::FakeDD::EXPORT_TAGS = (all =>[@Math::FakeDD::EXPORT_OK]);
 
-$Math::FakeDD::VERSION =  '0.02';
+$Math::FakeDD::VERSION =  '0.03';
 
 sub new {
 
@@ -743,7 +743,9 @@ sub dd_repro {
       Rmpfr_prec_round($mpfr, Rmpfr_get_exp($mpfr) + 1074, MPFR_RNDN);
     }
   }
-  else {
+  else { # TODO: It seems to work fine, but is
+         # there a better way to handle this ?
+
     $v[0] =~ s/0+$//; # remove all trailing zeroes
     my $m_lsd = Rmpfr_init2(53);
     Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
