@@ -7,6 +7,8 @@ use Config;
 
 use 5.022; # for $Config{longdblkind}
 
+use constant MPFR_LIB_VERSION   => MPFR_VERSION;
+
 use constant NAN_COMPARE_BUG    => $Math::MPFR::VERSION < 4.23 ? 1 : 0;
 
 use constant NV_IS_DOUBLE       => $Config{nvsize} == 8        ? 1 : 0;
@@ -56,7 +58,7 @@ require Exporter;
 *import = \&Exporter::import;
 
 @Math::FakeDD::EXPORT_OK = qw(
-  NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD
+  NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
   dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
@@ -741,8 +743,8 @@ sub dd_repro {
       # library, will be in the range (-1022 .. -1073)
       # Rmpfr_prec_round($mpfr, $v[1] + 1074, MPFR_RNDN);
 
-      if(RMPFR_PREC_MIN == 2) {
-        # Prior to mpfr-4.0, min allowed precision is 2 bits,
+      if( MPFR_LIB_VERSION < 262146 ) { # 4.0.1 or earlier
+        # Prior to mpfr-4.0.2, there are issues with precision < 2,
         # but DBL_DENORM_MIN calls for a precision of one bit.
         # We therefore return the hard coded value for this case.
 
