@@ -1,5 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
+0.04
+
 0.03
  - Allow for mpfr versions older than 4.0.0, as they set minimum allowed precision
    to 2 bits. (Beginning with 4.0.0, this minimum has been set to 1.)
