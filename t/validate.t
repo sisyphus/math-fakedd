@@ -130,10 +130,11 @@ dd_assign($fudd1, 2 ** -1021);
 cmp_ok(dd_repro($fudd1), 'eq', '4.450147717014403e-308', "dd_repro returns 2 ** -1021 as '4.450147717014403e-308'");
 
 $fudd1 += 2 ** -1020;
-cmp_ok(dd_repro($fudd1), 'eq', '1.3350443151043208e-307', "dd_repro '1.3350443151043208e-307' for (2 ** -1020)+(2 ** -1021)");
+cmp_ok(dd_repro($fudd1), 'eq', '1.33504431510432083e-307', "dd_repro '1.33504431510432083e-307' for (2 ** -1020)+(2 ** -1021)");
 
-dd_assign($fudd1, (2 ** -1021) + (2 ** -1064)) ;
-cmp_ok(dd_repro($fudd1), 'eq', '4.450147717014909e-308', "dd_repro '4.450147717014909e-308' for (2 ** -1021)+(2 ** -1064)");
+dd_assign($fudd1, 2 ** -1021);
+$fudd1 += (2 ** -1064) ;
+cmp_ok(dd_repro($fudd1), 'eq', '4.4501477170149087e-308', "dd_repro '4.4501477170149087e-308' for (2 ** -1021)+(2 ** -1064)");
 
 dd_assign($fudd1, '0.59374149305888224e17'); # mpfr_dump() exponent == 56
 cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.59374149305888224e17' ok");
@@ -161,3 +162,5 @@ cmp_ok(Math::FakeDD->new(dd_repro($fudd1)), '==', $fudd1, "round trip for '0.599
 
 done_testing();
 
+
+__END__
