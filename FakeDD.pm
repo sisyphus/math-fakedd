@@ -733,59 +733,54 @@ sub dd_repro {
   my @v = Rmpfr_deref2($mpfr, 2, 0, MPFR_RNDN);
 
   if($arg->{lsd} == 0) {
-    if(abs($arg->{msd}) >= 2 ** -1022) {
-      # msd is NOT subnormal, so use 53-bit precision
-      Rmpfr_prec_round($mpfr, 53, MPFR_RNDN)
-        if Rmpfr_get_exp($mpfr) <= 0;
-    }
-    else {
-      # msd is subnormal; the exponent, with the mpfr
-      # library, will be in the range (-1022 .. -1073)
-      # Rmpfr_prec_round($mpfr, $v[1] + 1074, MPFR_RNDN);
+    if( MPFR_LIB_VERSION < 262146 ) { # 4.0.1 or earlier
+      # Prior to mpfr-4.0.2, there are issues with precision < 2,
+      # but DBL_DENORM_MIN calls for a precision of one bit.
+      # We therefore return the hard coded value for this case.
 
-      if( MPFR_LIB_VERSION < 262146 ) { # 4.0.1 or earlier
-        # Prior to mpfr-4.0.2, there are issues with precision < 2,
-        # but DBL_DENORM_MIN calls for a precision of one bit.
-        # We therefore return the hard coded value for this case.
-
-        if(Rmpfr_get_exp($mpfr) == -1073) {
-          # $mpfr is 2 ** -1074
-          my $ret = $neg ? '-5e-324' : '5e-324';
-          return $ret;
-        }
+      if(Rmpfr_get_exp($mpfr) == -1073) {
+        # $mpfr is 2 ** -1074
+        my $ret = $neg ? '-5e-324' : '5e-324';
+        return $ret;
       }
-      Rmpfr_prec_round($mpfr, Rmpfr_get_exp($mpfr) + 1074, MPFR_RNDN);
     }
+    Rmpfr_prec_round($mpfr, 1074 + Rmpfr_get_exp($mpfr), MPFR_RNDN);
   }
-  else { # TODO: It seems to work fine, but is
-         # there a better way to handle this ?
+  else {
 
-    $v[0] =~ s/0+$//; # remove all trailing zeroes
+    my $m_msd = Rmpfr_init2(53);
     my $m_lsd = Rmpfr_init2(53);
+
+    Rmpfr_set_d($m_msd, $arg->{msd}, MPFR_RNDN);
     Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
 
-    my @v_lsd = Rmpfr_deref2($m_lsd, 2, 0, MPFR_RNDN);
-    $v_lsd[0] =~ s/0+$//; # remove all trailing zeroes
-    my $v_lsd_len = length($v_lsd[0]);
-    my $correction = 0;
-
-    # $correction will be altered to the pertinent +ve
-    # value (below) when length($v[0]) is understating
-    # the required precision.
-
+    my $prec;
     if(abs($arg->{lsd}) >= 2 ** -1022) {
-      # lsd is NOT subnormal
-      $correction = 53 - $v_lsd_len
-         if $v_lsd_len < 53;
+      # lsd is not subnormal.
+#      my $m_lsd = Rmpfr_init2(53);
+#      Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
+#      my @v = Rmpfr_deref2($m_lsd, 2, 0, MPFR_RNDN);
+#      my $correction = length($v[0]); # might contain a leading minus sign.
+#      $v[0] =~ s/0+$//;               # remove all trailing zeroes
+#      $correction -= length($v[0]);
+
+      $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
+
+      my $mpfr_copy = Rmpfr_init2(2098);
+      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
+      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
+      my $trial_dd = Math::FakeDD->new(mpfrtoa($mpfr_copy));
+      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+        return '-' . mpfrtoa($mpfr_copy) if $neg;
+        return mpfrtoa($mpfr_copy);
+      }
+      $prec++;
     }
     else {
-      # lsd is subnormal
-      $correction = $v_lsd[1] + 1074 - $v_lsd_len
-        if $v_lsd_len < $v_lsd[1] + 1074;
-
+      $prec = Rmpfr_get_exp($m_msd) + 1074;
     }
 
-    Rmpfr_prec_round($mpfr, length($v[0]) + $correction, MPFR_RNDN);
+    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
   }
 
   return '-' . mpfrtoa($mpfr) if $neg;
