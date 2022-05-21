@@ -124,27 +124,38 @@
 
 =head1 COMPARISON FUNCTIONS
 
-  $integer = dd_cmp($arg1, $arg2);
-  $integer = dd_spaceship($arg1, $arg2);
+  $iv = dd_cmp($arg1, $arg2);
+  $iv = dd_spaceship($arg1, $arg2);
 
-   $integer < 0  if $arg1 <  $arg2.
-   $integer > 0  if $arg1 >  $arg2.
-   $integer == 0 if $arg1 == $arg2.
+   Return undef if at least one of $arg1
+   and $arg2 is NaN
+   $iv < 0  if $arg1 <  $arg2.
+   $iv > 0  if $arg1 >  $arg2.
+   $iv == 0 if $arg1 == $arg2.
 
-   dd_spaceship() returns undef if at least one of $arg1
-   and $arg2 is NaN.
-
-  $integer = dd_eq ($arg1, $arg2);
-  $integer = dd_neq($arg1, $arg2);
-  $integer = dd_gt($arg1, $arg2);
-  $integer = dd_gte($arg1, $arg2);
-  $integer = dd_lt($arg1, $arg2);
-  $integer = dd_lte($arg1, $arg2);
+  $iv = dd_eq ($arg1, $arg2);
+  $iv = dd_neq($arg1, $arg2);
+  $iv = dd_gt($arg1, $arg2);
+  $iv = dd_gte($arg1, $arg2);
+  $iv = dd_lt($arg1, $arg2);
+  $iv = dd_lte($arg1, $arg2);
 
    If (respectively) $arg1 == $arg2, $arg1 != $arg2,
    $arg1 > $arg2, $arg1 >= $arg2, $arg1 < $arg2, $arg1 <= $arg2,
    then $integer is set to 1.
    Else $integer is set to 0.
+
+  $iv = dd_streq($obj, $arg);
+   We need this function only because Test::More can pull
+   in code that assumes 'eq' is overloaded. (And this is the
+   function that overloaded 'eq' calls.)
+   Return 1 if "$obj" eq "$arg".
+   Else return 0;
+
+  $iv = dd_strne($obj, $arg);
+   We provide this function only because dd_stre() is provided.
+   Return 1 if "$obj" ne "$arg".
+   Else return 0;
 
 =head1 OUTPUT FUNCTIONS
 
@@ -209,6 +220,7 @@
    abs, int, exp, log, sqrt,
    bool, !,
    atan2, cos, sin
+   eq ne
 
   Run
     my %oloads = Math::FakeDD::oload();
