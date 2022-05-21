@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use Math::FakeDD qw(:all);
 use Test::More;
+use Math::FakeDD::DDTest;
 
 *dd_mul_4196 = \&Math::FakeDD::dd_mul_4196;
 *dd_add_4196 = \&Math::FakeDD::dd_add_4196;
@@ -50,46 +51,33 @@ sub sparse_test {
   my $repro;
 
   $repro = dd_repro($op1);
-  chop_test($repro, $op1);
-  cmp_ok(Math::FakeDD->new($repro), '==', $op1, "[$op1_b $op1_l] repro ok");
+  chop_inc_test($op1);
 
   $repro = dd_repro($op2);
-  chop_test($repro, $op2);
-  cmp_ok(Math::FakeDD->new($repro), '==', $op2, "[$op2_b $op2_l] repro ok");
+  chop_inc_test($op2);
 
   my $mul = $op1 * $op2;
   $repro = dd_repro($mul);
-  chop_test($repro, $mul);
+  chop_inc_test($mul);
   cmp_ok(Math::FakeDD->new($repro), '==', $mul, "[$op1_b $op1_l] * [$op2_b $op2_l] repro ok");
   cmp_ok($mul, '==', dd_mul_4196($op1, $op2), "$op1 * $op2 ok");
 
   my $add = $op1 + $op2;
   $repro = dd_repro($add);
-  chop_test($repro, $add);
+  chop_inc_test($add);
   cmp_ok(Math::FakeDD->new($repro), '==', $add, "[$op1_b $op1_l] + [$op2_b $op2_l] repro ok");
   cmp_ok($add, '==', dd_add_4196($op1, $op2), "$op1 + $op2 ok");
 
   my $div = $op1 / $op2;
   $repro = dd_repro($div);
-  chop_test($repro, $div);
+  chop_inc_test($div);
   cmp_ok(Math::FakeDD->new($repro), '==', $div, "[$op1_b $op1_l] / [$op2_b $op2_l] repro ok");
   cmp_ok($div, '==', dd_div_4196($op1, $op2), "$op1 / $op2 ok");
 
   my $sub = $op1 - $op2;
   $repro = dd_repro($sub);
-  chop_test($repro, $sub);
+  chop_inc_test($sub);
   cmp_ok(Math::FakeDD->new($repro), '==', $sub, "[$op1_b $op1_l] - [$op2_b $op2_l] repro ok");
   cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "$op1 - $op2 ok");
 }
 
-sub chop_test {
-  my($repro, $op) = (shift, shift);
-  my @r = split /e/i, $repro;
-  chop($r[0]) while $r[0] =~ /0$/;
-  return 1 if length($r[0]) < 3;
-  chop($r[0]);
-  my $chopped = defined($r[1]) ? $r[0] . 'e' . $r[1]
-                               : $r[0];
-
-  cmp_ok(Math::FakeDD->new($chopped), '<', $op, sprintx($op) . " chop test ok");
-}
