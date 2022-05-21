@@ -18,6 +18,7 @@ use strict;
 use warnings;
 use Math::FakeDD qw(:all);
 use Test::More;
+use Math::FakeDD::DDTest;
 
 my $dbl_min = 2 ** -1022;
 
@@ -36,6 +37,8 @@ for(my $i = -300; $i <= 300; $i++) {
     my $repro   = dd_repro($orig);
     my $decimal = dd_dec  ($orig);
     my $hex     = dd_hex  ($orig);
+
+    chop_inc_test($orig);
 
     if($orig < 1 && $orig > -1) {
       cmp_ok(int($orig), '==', 0, "int() expected to return a value of 0");
@@ -61,38 +64,6 @@ for(my $i = -300; $i <= 300; $i++) {
     my $t = int(Math::FakeDD->new($repro));
     cmp_ok(int($orig), '==', $t                 , "$str: int() ok");
 
-    my $check1 = Math::FakeDD->new($repro);
-    cmp_ok($check1, '==', $orig, "$str: round trip achieved");
-
-    # round down by removing the least significant mantissa digit
-    my @chop  = split /e/i, $repro;
-    chop($chop[0]);
-    next if $chop[0] =~ /\.$/;
-
-    if(!defined($chop[1])) {
-      $repro = $chop[0];
-    }
-    else {
-      $repro = $chop[0] . 'e' . $chop[1];
-    }
-
-    my $check2 = Math::FakeDD->new($repro);
-    cmp_ok($check2, '!=', $orig, "$str: chop() alters value");
-    cmp_ok(abs($check2), '<', abs($orig), "$str: test value < original");
-
-    next if $chop[0] =~ /9$/;
-
-    ++substr($chop[0], -1); # round up the last digit.
-
-    if(!defined($chop[1])) {
-      $repro = $chop[0];
-    }
-    else {
-      $repro = $chop[0] . 'e' . $chop[1];
-    }
-    my $check3 = Math::FakeDD->new($repro);
-    cmp_ok($check3, '!=', $orig, "$str: round-up alters value");
-    cmp_ok(abs($check3), '>', abs($orig), "$str: test value > original");
   }
 }
 
