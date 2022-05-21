@@ -97,7 +97,7 @@ cmp_ok($fudd1, '==', int($fudd2), "(2 ** 100) < int((2 ** 100) + (2 **-100))");
 
 my %oload = Math::FakeDD::oload();
 
-cmp_ok(scalar keys(%oload), '==', 28, "Math::FakeDD::oload relative sizes ok");
+cmp_ok(scalar keys(%oload), '==', 30, "Math::FakeDD::oload relative sizes ok");
 
 for(0.2, 0.3, 0.4, 0.50, 0.6, 0.8, 1, 2) {
 
@@ -135,6 +135,9 @@ cmp_ok($nan                                   , '!=', Math::FakeDD->new(), "NaN 
 cmp_ok(defined($nan <=> Math::FakeDD->new(1)), '==', 0, "1: NaN with spaceship op returns undef");
 
 cmp_ok(defined(Math::FakeDD->new(1) <=> $nan), '==', 0, "2: NaN with spaceship op returns undef");
+
+cmp_ok(Math::FakeDD->new('1.3'), 'eq', '[1.3 -4.4408920985006264e-17]', "dd_streq() overloading ok");
+cmp_ok(Math::FakeDD->new('1.4'), 'ne', '[1.3 -4.4408920985006264e-17]', "dd_strne() overloading ok");
 
 
 
