@@ -28,6 +28,8 @@ use overload
 'atan2' => \&dd_atan2,
 'bool'  => \&dd_true,
 'cos'   => \&dd_cos,
+'eq'    => \&dd_streq,
+'ne'    => \&dd_strne,
 'exp'   => \&dd_exp,
 'int'   => \&dd_int,
 'log'   => \&dd_log,
@@ -61,7 +63,8 @@ require Exporter;
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
-  dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt dd_stringify
+  dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt
+  dd_streq dd_stringify dd_strne
   dd_sub dd_sub_eq
   dd2mpfr mpfr2dd mpfr_any_prec2dd mpfr2098
   printx sprintx unpackx
@@ -730,6 +733,8 @@ sub dd_repro {
     Rmpfr_neg($mpfr, $mpfr, MPFR_RNDN);
     $neg = 1;
   }
+
+  my $exp = Rmpfr_get_exp($mpfr);
   my @v = Rmpfr_deref2($mpfr, 2, 0, MPFR_RNDN);
 
   if($arg->{lsd} == 0) {
@@ -738,13 +743,18 @@ sub dd_repro {
       # but DBL_DENORM_MIN calls for a precision of one bit.
       # We therefore return the hard coded value for this case.
 
-      if(Rmpfr_get_exp($mpfr) == -1073) {
+      if($exp == -1073) {
         # $mpfr is 2 ** -1074
         my $ret = $neg ? '-5e-324' : '5e-324';
         return $ret;
       }
     }
-    Rmpfr_prec_round($mpfr, 1074 + Rmpfr_get_exp($mpfr), MPFR_RNDN);
+    if($exp == -549) {
+      Rmpfr_prec_round($mpfr, 106, MPFR_RNDN);
+    }
+    else {
+      Rmpfr_prec_round($mpfr, 1074 + Rmpfr_get_exp($mpfr), MPFR_RNDN);
+    }
   }
   else {
 
@@ -764,17 +774,21 @@ sub dd_repro {
 #      $v[0] =~ s/0+$//;               # remove all trailing zeroes
 #      $correction -= length($v[0]);
 
-      $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
-
-      my $mpfr_copy = Rmpfr_init2(2098);
-      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
-      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
-      my $trial_dd = Math::FakeDD->new(mpfrtoa($mpfr_copy));
-      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
-        return '-' . mpfrtoa($mpfr_copy) if $neg;
-        return mpfrtoa($mpfr_copy);
-      }
-      $prec++;
+#      if($exp == 550) {
+#        $prec = 106;
+#      }
+#      else {
+        $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
+        my $mpfr_copy = Rmpfr_init2(2098);
+        Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
+        Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
+        my $trial_dd = Math::FakeDD->new(mpfrtoa($mpfr_copy));
+        if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+          return '-' . mpfrtoa($mpfr_copy) if $neg;
+          return mpfrtoa($mpfr_copy);
+        }
+        $prec++;
+#      }
     }
     else {
       $prec = Rmpfr_get_exp($m_msd) + 1074;
@@ -840,6 +854,28 @@ sub dd_sqrt {
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
   return $ret;
+}
+
+sub dd_streq {
+  # Provided only because Test::More can pull in code
+  # that assumes that overloading of 'eq' exists.
+  # This is the function that overloaded 'eq' calls.
+  die "Wrong arg given to dd_streq()"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  my($arg1, $arg2) = (shift, shift);
+  return 1 if "$arg1" eq "$arg2";
+  return 0;
+}
+
+sub dd_strne {
+  # Provided only because dd_streq() is provided.
+  die "Wrong arg given to dd_strne()"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  my($arg1, $arg2) = (shift, shift);
+  return 1 if "$arg1" ne "$arg2";
+  return 0;
 }
 
 sub dd_stringify {
@@ -1047,6 +1083,8 @@ sub oload {
     'atan2' => 'dd_atan2',
     'bool'  => 'dd_true',
     'cos'   => 'dd_cos',
+    'eq'    => 'dd_streq',
+    'ne'    => 'dd_strne',
     'exp'   => 'dd_exp',
     'int'   => 'dd_int',
     'log'   => 'dd_log',
