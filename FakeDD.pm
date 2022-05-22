@@ -735,9 +735,9 @@ sub dd_repro {
   }
 
   my $exp = Rmpfr_get_exp($mpfr);
-  my @v = Rmpfr_deref2($mpfr, 2, 0, MPFR_RNDN);
 
   if($arg->{lsd} == 0) {
+    my $addon = 1074;
     if( MPFR_LIB_VERSION < 262146 ) { # 4.0.1 or earlier
       # Prior to mpfr-4.0.2, there are issues with precision < 2,
       # but DBL_DENORM_MIN calls for a precision of one bit.
@@ -750,11 +750,11 @@ sub dd_repro {
       }
     }
     if($exp == -549) {
-      Rmpfr_prec_round($mpfr, 106, MPFR_RNDN);
+      $addon = 1073;
     }
-    else {
-      Rmpfr_prec_round($mpfr, 1074 + Rmpfr_get_exp($mpfr), MPFR_RNDN);
-    }
+
+    Rmpfr_prec_round($mpfr, $addon + $exp, MPFR_RNDN);
+
   }
   else {
 
@@ -767,38 +767,106 @@ sub dd_repro {
     my $prec;
     if(abs($arg->{lsd}) >= 2 ** -1022) {
       # lsd is not subnormal.
-#      my $m_lsd = Rmpfr_init2(53);
-#      Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
-#      my @v = Rmpfr_deref2($m_lsd, 2, 0, MPFR_RNDN);
-#      my $correction = length($v[0]); # might contain a leading minus sign.
-#      $v[0] =~ s/0+$//;               # remove all trailing zeroes
-#      $correction -= length($v[0]);
-
-#      if($exp == 550) {
-#        $prec = 106;
-#      }
-#      else {
-        $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
-        my $mpfr_copy = Rmpfr_init2(2098);
-        Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
-        Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
-        my $trial_dd = Math::FakeDD->new(mpfrtoa($mpfr_copy));
-        if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
-          return '-' . mpfrtoa($mpfr_copy) if $neg;
-          return mpfrtoa($mpfr_copy);
-        }
-        $prec++;
-#      }
+      $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
+      $prec-- if $arg->{lsd} < 0;
+      my $mpfr_copy = Rmpfr_init2(2098);
+      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
+      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
+      my $trial_dd = Math::FakeDD->new(mpfrtoa($mpfr_copy));
+      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+        return '-' . mpfrtoa($mpfr_copy) if $neg;
+        return mpfrtoa($mpfr_copy);
+      }
+      $prec++;
     }
     else {
       $prec = Rmpfr_get_exp($m_msd) + 1074;
     }
-
     Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
   }
 
   return '-' . mpfrtoa($mpfr) if $neg;
   return mpfrtoa($mpfr);
+}
+
+sub _dd_repro2 { # private, not documented
+  die "Arg given to dd_repro2() must be a Math::FakeDD object"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  my $arg = shift;
+
+  return (0, 'NaN') if dd_is_nan($arg);
+
+  if(dd_is_inf($arg)) {
+    return (0,'Inf' ) if $arg > 0;
+    return (0,'-Inf');
+  }
+
+  return (0, '0.0') if $arg == 0;
+
+  my $neg = 0;
+  my $mpfr = dd2mpfr($arg);
+  if($mpfr < 0) {
+    Rmpfr_neg($mpfr, $mpfr, MPFR_RNDN);
+    $neg = 1;
+  }
+
+  my $exp = Rmpfr_get_exp($mpfr);
+  my $prec;
+
+  if($arg->{lsd} == 0) {
+    my $addon = 1074;
+    if( MPFR_LIB_VERSION < 262146 ) { # 4.0.1 or earlier
+      # Prior to mpfr-4.0.2, there are issues with precision < 2,
+      # but DBL_DENORM_MIN calls for a precision of one bit.
+      # We therefore return the hard coded value for this case.
+
+      if($exp == -1073) {
+        # $mpfr is 2 ** -1074
+        my $ret = $neg ? '-5e-324' : '5e-324';
+        return $ret;
+      }
+    }
+    if($exp == -549) {
+      $addon = 1073;
+    }
+    $prec = $addon + $exp;
+    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
+  }
+  else {
+
+    my $m_msd = Rmpfr_init2(53);
+    my $m_lsd = Rmpfr_init2(53);
+
+    Rmpfr_set_d($m_msd, $arg->{msd}, MPFR_RNDN);
+    Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
+
+    if(abs($arg->{lsd}) >= 2 ** -1022) {
+      # lsd is not subnormal.
+      $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
+      $prec-- if $arg->{lsd} < 0;
+      my $mpfr_copy = Rmpfr_init2(2098);
+      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
+      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
+      my $trial_dd = Math::FakeDD->new(mpfrtoa($mpfr_copy));
+      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+        if($neg) {
+          return ($prec, '-' . mpfrtoa($mpfr_copy));
+        }
+        else {
+          return ($prec, mpfrtoa($mpfr_copy));
+        }
+      }
+      $prec++;
+    }
+    else {
+      $prec = Rmpfr_get_exp($m_msd) + 1074;
+    }
+    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
+  }
+
+  return ($prec, '-' . mpfrtoa($mpfr)) if $neg;
+  return ($prec, mpfrtoa($mpfr));
 }
 
 sub dd_sin {
