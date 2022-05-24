@@ -17,8 +17,11 @@
 use strict;
 use warnings;
 use Math::FakeDD qw(:all);
-use Test::More;
+use Test::More; # skip_all => "dd_repro() incorrectly handles some values";
 use Math::FakeDD::DDTest;
+
+#done_testing();
+#__END__
 
 my $dbl_min = 2 ** -1022;
 
