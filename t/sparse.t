@@ -4,8 +4,11 @@
 use strict;
 use warnings;
 use Math::FakeDD qw(:all);
-use Test::More;
+use Test::More; # skip_all => "dd_repro() incorrectly handles some values";
 use Math::FakeDD::DDTest;
+
+#done_testing();
+#__END__
 
 *dd_mul_4196 = \&Math::FakeDD::dd_mul_4196;
 *dd_add_4196 = \&Math::FakeDD::dd_add_4196;
