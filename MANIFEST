@@ -11,6 +11,7 @@ DDTest/DDTest.pm
 t/add.t
 t/assign.t
 t/cmp.t
+t/dd_repro_basics.t
 t/div.t
 t/mul.t
 t/mpfr2dd.t
