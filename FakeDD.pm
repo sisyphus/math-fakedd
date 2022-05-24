@@ -51,6 +51,7 @@ use overload
 '**='   => \&dd_pow_eq,
 '<=>'   => \&dd_spaceship,
 '""'    => \&dd_stringify,
+'0+'    => \&dd_numify,
 '-'     => \&dd_sub,
 '-='    => \&dd_sub_eq,
 '!'     => \&dd_false,
@@ -63,8 +64,8 @@ require Exporter;
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
-  dd_mul dd_mul_eq dd_nan dd_neq dd_pow dd_pow_eq dd_repro dd_sin dd_spaceship dd_sqrt
-  dd_streq dd_stringify dd_strne
+  dd_mul dd_mul_eq dd_nan dd_neq dd_numify dd_pow dd_pow_eq dd_repro dd_repro_test
+  dd_sin dd_spaceship dd_sqrt dd_streq dd_stringify dd_strne
   dd_sub dd_sub_eq
   dd2mpfr mpfr2dd mpfr_any_prec2dd mpfr2098
   printx sprintx unpackx
@@ -73,6 +74,15 @@ require Exporter;
 %Math::FakeDD::EXPORT_TAGS = (all =>[@Math::FakeDD::EXPORT_OK]);
 
 $Math::FakeDD::VERSION =  '0.04';
+
+# Whenever dd_repro($obj) returns its string representation of
+# the value of $obj, $Math::FakeDD::REPRO_PREC is set to the
+# bit-precision that was used to derive that returned value.
+# This variable will be set to zero if an Inf, NaN or zero
+# $obj is passed to dd_repro().The initial value of -1 indicates
+# that dd_repro() has not been called at all.
+
+$Math::FakeDD::REPRO_PREC = -1;
 
 sub new {
 
@@ -93,6 +103,257 @@ sub new {
     if ref($_[0]) eq "Math::FakeDD";
 
   return mpfr2dd(mpfr2098(shift));
+}
+
+sub dd_repro {
+  die "Arg given to dd_repro() must be a Math::FakeDD object"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  my $arg = shift;
+  my $prec = 0;
+  if(dd_is_nan($arg)) {
+    $Math::FakeDD::REPRO_PREC = 0;
+    return 'NaN';
+  }
+
+  if(dd_is_inf($arg)) {
+    $Math::FakeDD::REPRO_PREC = 0;
+    return'Inf' if $arg > 0;
+    return'-Inf';
+  }
+
+  if($arg == 0) {
+    $Math::FakeDD::REPRO_PREC = 0;
+    return '0.0';
+  }
+
+  my $neg = 0;
+  my $mpfr = dd2mpfr($arg);
+  if($mpfr < 0) {
+    Rmpfr_neg($mpfr, $mpfr, MPFR_RNDN);
+    $neg = 1;
+  }
+
+  my $exp = Rmpfr_get_exp($mpfr);
+
+  if($arg->{lsd} == 0) {
+    my $addon = 1074;
+    if( MPFR_LIB_VERSION < 262146 ) { # 4.0.1 or earlier
+      # Prior to mpfr-4.0.2, there are issues with precision < 2,
+      # but DBL_DENORM_MIN calls for a precision of one bit.
+      # We therefore return the hard coded value for this case.
+
+      if($exp == -1073) {
+        # $mpfr is 2 ** -1074
+        my $ret = $neg ? '-5e-324' : '5e-324';
+        $Math::FakeDD::REPRO_PREC = 1;
+        return $ret;
+      }
+    }
+    if($exp == -549) {
+      $addon = 1073;
+    }
+
+    $prec = $addon + $exp;
+    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
+
+  }
+  else {
+
+    my $m_msd = Rmpfr_init2(53);
+    my $m_lsd = Rmpfr_init2(53);
+
+    Rmpfr_set_d($m_msd, $arg->{msd}, MPFR_RNDN);
+    Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
+
+    if(abs($arg->{lsd}) >= 2 ** -1022) {
+      # lsd is not subnormal.
+      $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
+      $prec-- if $arg->{lsd} < 0;
+      my $mpfr_copy = Rmpfr_init2(2098);
+      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
+      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
+      my $trial_repro = mpfrtoa($mpfr_copy);
+      my $trial_dd = Math::FakeDD->new($trial_repro);
+      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+        $Math::FakeDD::REPRO_PREC = $prec;
+        return '-' . mpfrtoa($mpfr_copy) if $neg;
+        return mpfrtoa($mpfr_copy);
+      }
+
+      $prec++;
+    }
+    else {
+      $prec = Rmpfr_get_exp($m_msd) + 1074;
+    }
+    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
+  }
+
+  $Math::FakeDD::REPRO_PREC = $prec;
+  return '-' . mpfrtoa($mpfr) if $neg;
+  return mpfrtoa($mpfr);
+}
+
+sub dd_repro_test {
+  my ($repro, $op) = (shift, shift);
+  my $ret = 0;
+
+  # Handle Infs, Nan, and Zero.
+  if(dd_is_nan($op)) {
+    return 7 if $repro =~ /^nan$/i;
+    return 0;
+  }
+
+  if(dd_is_inf($op)) {
+    return 7 if ($op > 0 && $repro =~ /^inf$/i);
+    return 7 if ($op < 0 && $repro =~ /^\-inf$/i);
+    return 0;
+  }
+
+  if($op == 0) {
+    return 7 if $repro eq '0.0';
+    return 0;
+  }
+
+  $repro =~ s/^\-// if $op < 0; # TODO - remove this stipulation
+  $op = abs($op);               # TODO - remove this stipulation
+
+  $ret++ if Math::FakeDD->new($repro) == $op; # round trip ok
+
+  my @r = split /e/i, $repro;
+
+
+  # We remove from $repro any trailing mantissa zeroes, and then
+  # replace the least significant digit with zero.
+  # IOW, we effectively chop off the least siginificant digit, thereby
+  # rounding it down to the next lowest decimal precision.)
+  # This altered string should assign to a DoubleDouble value that is
+  # less than the given $op.
+
+  chop($r[0]) while $r[0] =~ /0$/;
+  $r[0] =~ s/\.$//;
+  $r[1] = defined $r[1] ? $r[1] : 0;
+  while($r[0] =~ /0$/) {
+    chop $r[0];
+    $r[1]++;
+  }
+
+  return $ret + 6 if length($r[0]) < 2; # chop test and increment test inapplicable.
+
+  substr($r[0], -1, 1, '0');
+
+  my $chopped = $r[0] . 'e' . $r[1];
+
+
+  $ret += 2 if Math::FakeDD->new($chopped) < $op; # chop test ok.
+
+  # Now we derive a value that is $repro rounded up to the next lowest
+  # decimal representation.
+  # This value should assign to a  DoubleDouble value that is greater
+  # than the given $op.
+
+  if($r[0] =~ /\./) {
+    # We must remove the '.', do the string increment,
+    # and then reinsert the '.' in the appropriate place.
+    my @mantissa = split /\./, $r[0];
+    my $point_pos = -(length($mantissa[1]));
+    my $t = $mantissa[0] . $mantissa[1];
+    $t++ for 1..10;
+    substr($t, $point_pos, 0, '.');
+    $r[0] = $t;
+  }
+  else {
+    $r[0]++ for 1..10;
+  }
+  my $incremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
+                                   : $r[0];
+
+  $ret += 4 if Math::FakeDD->new($incremented) > $op; # increment test ok
+  return $ret;
+}
+
+sub _mantissa_decrement {
+  # Return the given (decimal) string arg with its
+  # ULP having been reduced by 1.
+
+  my $arg = shift;
+  die "Signed values not accepted in _mantissa_decrement()"
+    if $arg =~ /^\+|^\-/;
+  my @r = split /e/i, $arg;
+  if($r[0] =~ /\./) {
+    # We must remove the '.', do the string decrement,
+    # and then reinsert the '.' in the appropriate place.
+    my @mantissa = split /\./, $r[0];
+    my $point_pos = -(length($mantissa[1]));
+    my $t = $mantissa[0] . $mantissa[1];
+    $t = _dec($t);
+    substr($t, $point_pos, 0, '.');
+    $r[0] = $t;
+  }
+  else {
+    $r[0] = _dec($r[0]);
+  }
+  my $decremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
+                                   : $r[0];
+  return $decremented;
+}
+
+sub _dec {
+  my $arg = shift;
+
+  my $sub = 1;
+  my $carry = 0;
+  my $pos = -1;
+
+  while(1) {
+    my $op = substr($arg, $pos, 1);
+    my $rep = $op - $sub;
+    if($rep < 0) {
+      $rep += 10;
+      $carry = 10;
+    }
+    else { $carry = 0 }
+
+    substr($arg, $pos, 1, $rep);
+
+    die "_dec() is buggy (overflowed)"
+      if length $arg < -$pos;
+
+    last unless $carry;
+
+    $pos--;
+  }
+
+  return '0' unless $arg =~ /[1-9]/;
+  $arg =~ s/^0+//;
+  return $arg;
+
+}
+
+sub _mantissa_increment {
+  # Return the given (decimal) string arg with its
+  # ULP having been raised by 1.
+
+  my $arg = shift;
+  die "Signed values not accepted in _mantissa_increment()"
+    if $arg =~ /^\+|^\-/;
+  my @r = split /e/i, $arg;
+  if($r[0] =~ /\./) {
+    # We must remove the '.', do the string decrement,
+    # and then reinsert the '.' in the appropriate place.
+    my @mantissa = split /\./, $r[0];
+    my $point_pos = -(length($mantissa[1]));
+    my $t = $mantissa[0] . $mantissa[1];
+    $t++ for 1..10;
+    substr($t, $point_pos, 0, '.');
+    $r[0] = $t;
+  }
+  else {
+    $r[0]++ for 1..10;
+  }
+  my $incremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
+                                   : $r[0];
+  return $incremented;
 }
 
 sub dd_abs {
@@ -648,6 +909,16 @@ sub dd_neq {
   return 0;                          # equal
 }
 
+sub dd_numify {
+  # Mainly for '0+' overloading.
+  die "Argument passed to dd_numify must ge a Math::FakeDD object"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  my $arg = shift;
+  return $arg->{msd} + $arg->{lsd}; # Information might be lost if
+                                    # NV type is not DoubleDouble.
+}
+
 sub dd_pow {
   # When dd_pow is called via overloading of '**' a
   # third argument (which we cannot ignore) will be provided
@@ -710,163 +981,6 @@ sub dd_pow_eq {
   }
 
   dd_assign($_[0], mpfr2dd($rop1));
-}
-
-sub dd_repro {
-  die "Arg given to dd_repro() must be a Math::FakeDD object"
-    unless ref($_[0]) eq 'Math::FakeDD';
-
-  my $arg = shift;
-
-  return 'NaN' if dd_is_nan($arg);
-
-  if(dd_is_inf($arg)) {
-    return'Inf' if $arg > 0;
-    return'-Inf';
-  }
-
-  return '0.0' if $arg == 0;
-
-  my $neg = 0;
-  my $mpfr = dd2mpfr($arg);
-  if($mpfr < 0) {
-    Rmpfr_neg($mpfr, $mpfr, MPFR_RNDN);
-    $neg = 1;
-  }
-
-  my $exp = Rmpfr_get_exp($mpfr);
-
-  if($arg->{lsd} == 0) {
-    my $addon = 1074;
-    if( MPFR_LIB_VERSION < 262146 ) { # 4.0.1 or earlier
-      # Prior to mpfr-4.0.2, there are issues with precision < 2,
-      # but DBL_DENORM_MIN calls for a precision of one bit.
-      # We therefore return the hard coded value for this case.
-
-      if($exp == -1073) {
-        # $mpfr is 2 ** -1074
-        my $ret = $neg ? '-5e-324' : '5e-324';
-        return $ret;
-      }
-    }
-    if($exp == -549) {
-      $addon = 1073;
-    }
-
-    Rmpfr_prec_round($mpfr, $addon + $exp, MPFR_RNDN);
-
-  }
-  else {
-
-    my $m_msd = Rmpfr_init2(53);
-    my $m_lsd = Rmpfr_init2(53);
-
-    Rmpfr_set_d($m_msd, $arg->{msd}, MPFR_RNDN);
-    Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
-
-    my $prec;
-    if(abs($arg->{lsd}) >= 2 ** -1022) {
-      # lsd is not subnormal.
-      $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
-      $prec-- if $arg->{lsd} < 0;
-      my $mpfr_copy = Rmpfr_init2(2098);
-      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
-      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
-      my $trial_dd = Math::FakeDD->new(mpfrtoa($mpfr_copy));
-      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
-        return '-' . mpfrtoa($mpfr_copy) if $neg;
-        return mpfrtoa($mpfr_copy);
-      }
-      $prec++;
-    }
-    else {
-      $prec = Rmpfr_get_exp($m_msd) + 1074;
-    }
-    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
-  }
-
-  return '-' . mpfrtoa($mpfr) if $neg;
-  return mpfrtoa($mpfr);
-}
-
-sub _dd_repro2 { # private, not documented
-  die "Arg given to dd_repro2() must be a Math::FakeDD object"
-    unless ref($_[0]) eq 'Math::FakeDD';
-
-  my $arg = shift;
-
-  return (0, 'NaN') if dd_is_nan($arg);
-
-  if(dd_is_inf($arg)) {
-    return (0,'Inf' ) if $arg > 0;
-    return (0,'-Inf');
-  }
-
-  return (0, '0.0') if $arg == 0;
-
-  my $neg = 0;
-  my $mpfr = dd2mpfr($arg);
-  if($mpfr < 0) {
-    Rmpfr_neg($mpfr, $mpfr, MPFR_RNDN);
-    $neg = 1;
-  }
-
-  my $exp = Rmpfr_get_exp($mpfr);
-  my $prec;
-
-  if($arg->{lsd} == 0) {
-    my $addon = 1074;
-    if( MPFR_LIB_VERSION < 262146 ) { # 4.0.1 or earlier
-      # Prior to mpfr-4.0.2, there are issues with precision < 2,
-      # but DBL_DENORM_MIN calls for a precision of one bit.
-      # We therefore return the hard coded value for this case.
-
-      if($exp == -1073) {
-        # $mpfr is 2 ** -1074
-        my $ret = $neg ? '-5e-324' : '5e-324';
-        return $ret;
-      }
-    }
-    if($exp == -549) {
-      $addon = 1073;
-    }
-    $prec = $addon + $exp;
-    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
-  }
-  else {
-
-    my $m_msd = Rmpfr_init2(53);
-    my $m_lsd = Rmpfr_init2(53);
-
-    Rmpfr_set_d($m_msd, $arg->{msd}, MPFR_RNDN);
-    Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
-
-    if(abs($arg->{lsd}) >= 2 ** -1022) {
-      # lsd is not subnormal.
-      $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
-      $prec-- if $arg->{lsd} < 0;
-      my $mpfr_copy = Rmpfr_init2(2098);
-      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
-      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
-      my $trial_dd = Math::FakeDD->new(mpfrtoa($mpfr_copy));
-      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
-        if($neg) {
-          return ($prec, '-' . mpfrtoa($mpfr_copy));
-        }
-        else {
-          return ($prec, mpfrtoa($mpfr_copy));
-        }
-      }
-      $prec++;
-    }
-    else {
-      $prec = Rmpfr_get_exp($m_msd) + 1074;
-    }
-    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
-  }
-
-  return ($prec, '-' . mpfrtoa($mpfr)) if $neg;
-  return ($prec, mpfrtoa($mpfr));
 }
 
 sub dd_sin {
@@ -1174,6 +1288,7 @@ sub oload {
     '**='   => 'dd_pow_eq',
     '<=>'   => 'dd_spaceship',
     '""'    => 'dd_stringify',
+    '0+'    => 'dd_numify',
     '-'     => 'dd_sub',
     '-='    => 'dd_sub_eq',
     '!'     => 'dd_false',
