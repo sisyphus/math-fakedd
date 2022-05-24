@@ -178,14 +178,43 @@
 
   $str = dd_repro($obj); # "repro" short for "reproducible"
 
+   #### NOTE: This function is currently not guaranteed to work
+        as documented here. In the meantime,  you can use
+        dd_repro_test (documented below) to verify that $str has
+        been set correctly.
    Represent the value of $obj in decimal scientific notation,
    using as few decimal mantissa digits as possible, such that if
    this $str is assigned to a new Math::FakeDD object, then the
    new Math::FakeDD object will be identical to (ie a reproduction
    of) the Math::FakeDD object from which $str was derived.
+   Also set $Math::FakeDD::RETRO_PREC to the bit-precision value
+   that was used in determining $str.
 
-   NOTE: This representation, unlike that provided by dd_dec()
-         and dd_hex(), might not represent the value *exactly*.
+  $iv = dd_repro_test(dd_repro($obj), $obj);
+
+   Check that dd_repro($obj) does indeed return an accurate
+   representation of $obj, using the fewest decimal mantissa
+   digits possible.
+   The function assigns its first arg, dd_repro($obj), to a
+   string - let's call it $str.
+
+   3 tests are conducted:
+
+   1) that Math::FakeDD->new($str) == $obj.
+      $iv & 1 will be true if and only if this first test passes.
+
+   2) that if we were to round $str *down* to 1 less significant decimal
+      digit then Math::FakeDD->new($str) < $obj.
+      $iv & 2 will be true if and only if this second test passes.
+
+   3) that if we were round $str *up* to 1 less significant decimal
+      digit then Math::FakeDD->new($str) > $obj.
+      $iv & 4 will be true if and only if this second test passes.
+
+   If all three tests pass (in which case the returned $iv == 7) then
+   we know that dd_repro($obj) has functioned correctly and as intended.
+   Else, dd_repro() has not functioned correctly and we can determine
+   which test(s) failed by examining the 3 lowest bits of $iv.
 
   $str = dd_stringify($obj);
 
@@ -195,6 +224,11 @@
    less significant double. Both doubles  will be shown in as few
    digits as possible, while not losing any information.
    The overloading of interpolation uses this function.
+
+  $nv = dd_numify($obj); # Mainly for '0+' overloading.
+
+   Converts $obj to an NV, as accurately as the precision of the NV
+   allows.
 
   printx($obj);
 
@@ -216,11 +250,11 @@
 =head1 OPERATOR OVERLOADING
 
   The following operations are currently overloaded:
-   "", ==, !=, *, *=, **, **=, +, +=, -, -=, /, /=, <, <=, <=>, >, >=,
+   "", 0+, ==, !=, *, *=, **, **=, +, +=, -, -=, /, /=, <, <=, <=>, >, >=,
    abs, int, exp, log, sqrt,
    bool, !,
    atan2, cos, sin
-   eq ne
+   eq, ne
 
   Run
     my %oloads = Math::FakeDD::oload();
