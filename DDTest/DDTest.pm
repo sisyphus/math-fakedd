@@ -56,8 +56,12 @@ sub chop_inc_test {
 
   chop($r[0]) while $r[0] =~ /0$/;
   $r[0] =~ s/\.$//;
-  return 2 if $r[0] =~ /0$/;     # TODO
-  return 3 if length($r[0]) < 3; # TODO
+  $r[1] = defined $r[1] ? $r[1] : 0;
+  while($r[0] =~ /0$/) {
+    chop $r[0];
+    $r[1]++;
+  }
+  return 3 if length($r[0]) < 2; # chop test and inc test inapplicable
   substr($r[0], -1, 1, '0');
 
   my $chopped = defined($r[1]) ? $r[0] . 'e' . $r[1]
@@ -88,8 +92,10 @@ sub chop_inc_test {
   my $incremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
                                    : $r[0];
 
-  print "INCREMENTED:\n$incremented\n" if $debug;;
+  print "INCREMENTED:\n$incremented\n" if $debug;
+
   cmp_ok(Math::FakeDD->new($incremented), '>', $op, sprintx($op) . " inc test ok");
+
 }
 
 1;
