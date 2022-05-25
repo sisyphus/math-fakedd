@@ -6,7 +6,6 @@ Makefile.PL
 README
 
 DDTest/Makefile.PL
-DDTest/DDTest.pm
 
 t/add.t
 t/assign.t
