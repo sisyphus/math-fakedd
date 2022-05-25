@@ -140,8 +140,11 @@ cmp_ok(Math::FakeDD->new('1.3'), 'eq', '[1.3 -4.4408920985006264e-17]', "dd_stre
 cmp_ok(Math::FakeDD->new('1.4'), 'ne', '[1.3 -4.4408920985006264e-17]', "dd_strne() overloading ok");
 
 # overloading of '0+' uses dd_numify().
-cmp_ok(dd_numify(Math::FakeDD->new(2 ** 10) + Math::FakeDD->new(2 ** 70)), '==', (2 ** 10) + (2 ** 70),
-                                                                                 "'dd_numify' ok");
+# I haven't found a way of invoking the '0+'
+# overloading, so test dd_numify() instead.
+
+my $dd = dd_numify(Math::FakeDD->new(2 ** 10) + Math::FakeDD->new(2 ** 70));
+cmp_ok( $dd, '==', (2 ** 10) + (2 ** 70), "'dd_numify' ok");
 
 done_testing();
 
