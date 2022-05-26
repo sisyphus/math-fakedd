@@ -5,8 +5,6 @@ FakeDD.pod
 Makefile.PL
 README
 
-DDTest/Makefile.PL
-
 t/add.t
 t/assign.t
 t/cmp.t
