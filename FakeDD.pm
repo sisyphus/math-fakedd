@@ -127,6 +127,11 @@ sub dd_repro {
     return '0.0';
   }
 
+  if(NV_IS_DOUBLEDOUBLE) {
+    $Math::FakeDD::REPRO_PREC = undef; # nvtoa() doesn't tell us the precision.
+    return nvtoa($arg->{msd} + $arg->{lsd});
+  }
+
   my $neg = 0;
   my $mpfr = dd2mpfr($arg);
   if($mpfr < 0) {
@@ -173,12 +178,12 @@ sub dd_repro {
       my $mpfr_copy = Rmpfr_init2(2098);
       Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
       Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
-      my $trial_repro = mpfrtoa($mpfr_copy);
+      my $trial_repro = mpfrtoa($mpfr_copy, 53);
       my $trial_dd = Math::FakeDD->new($trial_repro);
       if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
         $Math::FakeDD::REPRO_PREC = $prec;
-        return '-' . mpfrtoa($mpfr_copy) if $neg;
-        return mpfrtoa($mpfr_copy);
+        return '-' . mpfrtoa($mpfr_copy, 53) if $neg;
+        return mpfrtoa($mpfr_copy, 53);
       }
 
       $prec++;
@@ -190,13 +195,18 @@ sub dd_repro {
   }
 
   $Math::FakeDD::REPRO_PREC = $prec;
-  return '-' . mpfrtoa($mpfr) if $neg;
-  return mpfrtoa($mpfr);
+  return '-' . mpfrtoa($mpfr, 53) if $neg;
+  return mpfrtoa($mpfr, 53);
 }
 
 sub dd_repro_test {
   my ($repro, $op) = (shift, shift);
   my $ret = 0;
+
+  my $debug = defined $_[0] ? $_[0] : 0;
+  $debug = $debug =~ /debug/i ? 1 : 0;
+
+  print "OP: $op\nREPRO: $repro\n" if $debug;
 
   # Handle Infs, Nan, and Zero.
   if(dd_is_nan($op)) {
@@ -222,6 +232,11 @@ sub dd_repro_test {
 
   my @r = split /e/i, $repro;
 
+  if($debug) {
+    print "SPLIT:\n$r[0]";
+    if(defined($r[1])) { print " $r[1]\n" }
+    else { print " no exponent\n" }
+  }
 
   # We remove from $repro any trailing mantissa zeroes, and then
   # replace the least significant digit with zero.
@@ -243,9 +258,9 @@ sub dd_repro_test {
   substr($r[0], -1, 1, '0');
 
   my $chopped = $r[0] . 'e' . $r[1];
+  print "CHOPPED:\n$chopped\n\n" if $debug;
 
-
-  $ret += 2 if Math::FakeDD->new($chopped) < $op; # chop test ok.
+  $ret += 2 if Math::FakeDD->new($chopped) < abs($op); # chop test ok.
 
   # Now we derive a value that is $repro rounded up to the next lowest
   # decimal representation.
@@ -268,7 +283,9 @@ sub dd_repro_test {
   my $incremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
                                    : $r[0];
 
-  $ret += 4 if Math::FakeDD->new($incremented) > $op; # increment test ok
+  print "INCREMENTED:\n$incremented\n" if $debug;
+
+  $ret += 4 if Math::FakeDD->new($incremented) > abs($op); # increment test ok
   return $ret;
 }
 
@@ -1065,10 +1082,24 @@ sub dd_stringify {
     unless ref($_[0]) eq 'Math::FakeDD';
 
   my $self = shift;
+
+  return "[" . nvtoa($self->{msd}) . " " . nvtoa($self->{lsd}) . "]"
+    if NV_IS_DOUBLE;
+
   my($mpfrm, $mpfrl) = (Rmpfr_init2(53), Rmpfr_init2(53));
   Rmpfr_set_d($mpfrm, $self->{msd}, MPFR_RNDN);
   Rmpfr_set_d($mpfrl, $self->{lsd}, MPFR_RNDN);
-  return "[" . mpfrtoa($mpfrm) . " " . mpfrtoa($mpfrl) . "]";
+  my $expm = Rmpfr_get_exp($mpfrm);
+
+  # Deal with the possibility that the absolute value of one (and only
+  # one) of the 2 doubles could be subnormal - ie less that 2 ** -1022.
+  if($expm < -1021) { Rmpfr_prec_round($mpfrm, 1074 + $expm, MPFR_RNDN) }   # msd is subnormal
+
+  elsif($self->{lsd}) { # Avoid the case that lsd is 0 !!!
+    my $expl = Rmpfr_get_exp($mpfrl);
+    if($expl < -1021) { Rmpfr_prec_round($mpfrl, 1074 + $expl, MPFR_RNDN) } # lsd is subnormal
+  }
+  return "[" . mpfrtoa($mpfrm, 53) . " " . mpfrtoa($mpfrl, 53) . "]";
 }
 
 sub dd_sub {
