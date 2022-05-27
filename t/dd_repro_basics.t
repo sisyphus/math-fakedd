@@ -5,7 +5,7 @@ use Test::More;
 
 # Tests TODO
 
-for(-1075..-1024) { # -348 is the largest failing exponent in this range
+for(-1075..1024) { # -348 is the largest failing exponent in this range
   my $vp = Math::FakeDD->new(  2 ** $_) ;
   my $vn = Math::FakeDD->new(-(2 ** $_));
   ok(chop_inc_test(dd_repro($vp), $vp));
