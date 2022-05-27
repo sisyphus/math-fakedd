@@ -140,6 +140,7 @@ sub dd_repro {
   }
 
   my $exp = Rmpfr_get_exp($mpfr);
+  my $mpfrtoa_subn = 2100; # Always greater than $mpfr precsion.
 
   if($arg->{lsd} == 0) {
     my $addon = 1074;
@@ -155,12 +156,14 @@ sub dd_repro {
         return $ret;
       }
     }
-    if($exp == -549) {
-      $addon = 1073;
-    }
 
     $prec = $addon + $exp;
     Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
+    $Math::FakeDD::REPRO_PREC = $prec;
+    # Provide 2nd arg of 728 to mpfrtoa().
+    # 2 ** -348 (prec = 727) needs this.
+    return '-' . mpfrtoa($mpfr, 728) if $neg;
+    return mpfrtoa($mpfr, 728);
 
   }
   else {
@@ -174,22 +177,40 @@ sub dd_repro {
     if(abs($arg->{lsd}) >= 2 ** -1022) {
       # lsd is not subnormal.
       $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
-      $prec-- if $arg->{lsd} < 0;
+      $prec-- if ( ($arg->{lsd} < 0 && $arg->{msd} > 0) || ($arg->{msd} < 0 && $arg->{lsd} > 0) );
       my $mpfr_copy = Rmpfr_init2(2098);
       Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
       Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
-      my $trial_repro = mpfrtoa($mpfr_copy, 53);
+      my $trial_repro = mpfrtoa($mpfr_copy, $mpfrtoa_subn);
       my $trial_dd = Math::FakeDD->new($trial_repro);
       if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+#        print "1: TRIAL SUCCEEDED\n";
         $Math::FakeDD::REPRO_PREC = $prec;
-        return '-' . mpfrtoa($mpfr_copy, 53) if $neg;
-        return mpfrtoa($mpfr_copy, 53);
+        return '-' . mpfrtoa($mpfr_copy, $mpfrtoa_subn) if $neg;
+        return mpfrtoa($mpfr_copy, $mpfrtoa_subn);
       }
 
       $prec++;
     }
     else {
-      $prec = Rmpfr_get_exp($m_msd) + 1074;
+      $prec = Rmpfr_get_exp($m_msd) + 1073; # $prec could be 0
+      $prec++ if $prec == 0;                # Ensure $prec > 0
+
+##new
+      my $mpfr_copy = Rmpfr_init2(2098);
+      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
+      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
+      my $trial_repro = mpfrtoa($mpfr_copy, $mpfrtoa_subn);
+      my $trial_dd = Math::FakeDD->new($trial_repro);
+      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+#        print "2: TRIAL SUCCEEDED\n";
+        $Math::FakeDD::REPRO_PREC = $prec;
+        return '-' . mpfrtoa($mpfr_copy, $mpfrtoa_subn) if $neg;
+        return mpfrtoa($mpfr_copy, $mpfrtoa_subn);
+      }
+
+      $prec++;
+##fin
     }
     Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
   }
