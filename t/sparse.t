@@ -4,11 +4,14 @@
 use strict;
 use warnings;
 use Math::FakeDD qw(:all);
-use Test::More; # skip_all => "dd_repro() incorrectly handles some values";
-use Math::FakeDD::DDTest;
+use Test::More;
 
-#done_testing();
-#__END__
+if(!$ENV{RUN_REPRO_TESTS}) {
+  is(1, 1);
+  warn "\n skipping all tests as $ENV{RUN_REPRO_TESTS} not set\n";
+  done_testing();
+  exit 0;
+}
 
 *dd_mul_4196 = \&Math::FakeDD::dd_mul_4196;
 *dd_add_4196 = \&Math::FakeDD::dd_add_4196;
@@ -41,46 +44,64 @@ for(0..19) {
   my $u = Math::FakeDD->new( $big[$ub] ) - Math::FakeDD->new( $little[$ul] );
   my $v = Math::FakeDD->new( $big[$vb] ) - Math::FakeDD->new( $little[$vl] );
 
-sparse_test($x, $y, $xb, $xl, $yb, $yl);
-sparse_test($u, $v, $ub, -$ul, $vb, -$vl);
+sparse_test($x, $y);
+sparse_test($u, $v);
+sparse_test($x, $v);
+sparse_test($u, $y);
+sparse_test($x, $u);
+sparse_test($y, $v);
 }
+
+my $op1 = Math::FakeDD->new('0x1p-550');
+my $op2 = Math::FakeDD->new('0x1p-1050');
+
+my $sub = $op1 - $op2;
+chop_inc_test(dd_repro($sub), $sub);
+
+print sprintx(dd_sub_4196($op1, $op2)), "\n";
+cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "ok");
+cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "$op1 - $op2 ok");
 
 done_testing();
 
 sub sparse_test {
   my ($op1, $op2)     = (shift, shift);
-  my ($op1_b, $op1_l) = (shift, shift);
-  my ($op2_b, $op2_l) = (shift, shift);
-  my $repro;
 
-  $repro = dd_repro($op1);
-  chop_inc_test($op1);
+  chop_inc_test(dd_repro($op1), $op1);
 
-  $repro = dd_repro($op2);
-  chop_inc_test($op2);
+  chop_inc_test(dd_repro($op2), $op2);
 
   my $mul = $op1 * $op2;
-  $repro = dd_repro($mul);
-  chop_inc_test($mul);
-  cmp_ok(Math::FakeDD->new($repro), '==', $mul, "[$op1_b $op1_l] * [$op2_b $op2_l] repro ok");
+  chop_inc_test(dd_repro($mul), $mul);
   cmp_ok($mul, '==', dd_mul_4196($op1, $op2), "$op1 * $op2 ok");
 
   my $add = $op1 + $op2;
-  $repro = dd_repro($add);
-  chop_inc_test($add);
-  cmp_ok(Math::FakeDD->new($repro), '==', $add, "[$op1_b $op1_l] + [$op2_b $op2_l] repro ok");
-  cmp_ok($add, '==', dd_add_4196($op1, $op2), "$op1 + $op2 ok");
+  chop_inc_test(dd_repro($add), $add);
+    cmp_ok($add, '==', dd_add_4196($op1, $op2), "$op1 + $op2 ok");
 
   my $div = $op1 / $op2;
-  $repro = dd_repro($div);
-  chop_inc_test($div);
-  cmp_ok(Math::FakeDD->new($repro), '==', $div, "[$op1_b $op1_l] / [$op2_b $op2_l] repro ok");
+  chop_inc_test(dd_repro($div), $div);
   cmp_ok($div, '==', dd_div_4196($op1, $op2), "$op1 / $op2 ok");
 
   my $sub = $op1 - $op2;
-  $repro = dd_repro($sub);
-  chop_inc_test($sub);
-  cmp_ok(Math::FakeDD->new($repro), '==', $sub, "[$op1_b $op1_l] - [$op2_b $op2_l] repro ok");
+  chop_inc_test(dd_repro($sub), $sub);
   cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "$op1 - $op2 ok");
 }
 
+sub chop_inc_test {
+   my $res;
+   my ($repro, $op) = (shift, shift);
+   if(defined($_[0])) {
+     $res = dd_repro_test($repro, $op, $_[0]);
+   }
+   else {
+     $res = dd_repro_test($repro, $op);
+   }
+   ok($res == 7) or dd_diag($res, $op);
+}
+
+sub dd_diag {
+  print STDERR "Failed round-trip for " . sprintx($_[1])     . "\n" unless $_[0] & 1;
+  print STDERR "Failed chop test for " . sprintx($_[1])      . "\n" unless $_[0] & 2;
+  print STDERR "Failed increment test for " . sprintx($_[1]) . "\n" unless $_[0] & 4;
+}
