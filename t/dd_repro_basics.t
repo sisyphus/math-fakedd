@@ -8,8 +8,18 @@ use Test::More;
 for(-1075..1024) { # -348 is the largest failing exponent in this range
   my $vp = Math::FakeDD->new(  2 ** $_) ;
   my $vn = Math::FakeDD->new(-(2 ** $_));
-  ok(chop_inc_test(dd_repro($vp), $vp));
-  ok(chop_inc_test(dd_repro($vn), $vn));
+
+
+  my $rp = dd_repro($vp);
+  my $rn = dd_repro($vn);
+
+  ok(chop_inc_test($rp, $vp));
+  ok(chop_inc_test($rn, $vn));
+
+  if(NV_IS_DOUBLEDOUBLE) {
+    ok($rp eq Math::MPFR::nvtoa($vp), "+(2 ** $_) agrees with nvtoa()");
+    ok($rn eq Math::MPFR::nvtoa($vn), "-(2 ** $_) agrees with nvtoa()");
+  }
 
   my $v1 = (2 ** $_) +
            (2 ** ($_ + 1)) +
@@ -23,8 +33,16 @@ for(-1075..1024) { # -348 is the largest failing exponent in this range
   my $dd1 = Math::FakeDD->new($v1);
   my $dd2 = Math::FakeDD->new($v2);
 
-  ok(chop_inc_test(dd_repro($dd1), $dd1));
-  ok(chop_inc_test(dd_repro($dd2), $dd2));
+  my $r1 = dd_repro($dd1);
+  my $r2 = dd_repro($dd2);
+
+  ok(chop_inc_test($r1, $dd1));
+  ok(chop_inc_test($r2, $dd2));
+
+  if(NV_IS_DOUBLEDOUBLE) {
+    ok($r1 eq Math::MPFR::nvtoa($v1), "2 ** $_ + ..... agrees with nvtoa()");
+    ok($r2 eq Math::MPFR::nvtoa($v2), "2 ** $_ + 2 ** ($_ + 1) agrees with nvtoa()");
+  }
 }
 
 done_testing();
