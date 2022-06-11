@@ -134,11 +134,9 @@ sub dd_repro {
 
   my $neg = 0;
   my $mpfr = dd2mpfr($arg);
-  my $mpfr_orig = Rmpfr_init2(2098);
-  Rmpfr_set($mpfr_orig, $mpfr, MPFR_RNDN); # copy $mpfr to $mpfr_orig
+
   if($mpfr < 0) {
     Rmpfr_neg($mpfr, $mpfr, MPFR_RNDN);
-    Rmpfr_neg($mpfr_orig, $mpfr_orig, MPFR_RNDN);
     $neg = 1;
   }
 
@@ -146,8 +144,6 @@ sub dd_repro {
                            # and the other double > 0.
 
   my $exp = Rmpfr_get_exp($mpfr);
-  #my $mpfrtoa_subn = 2100; # Initially greater than $mpfr precsion.
-                           # Might be reduced as we proceed.
 
   if($arg->{lsd} == 0) {
     my $addon = 1074;
@@ -172,55 +168,57 @@ sub dd_repro {
     return '-' . mpfrtoa($mpfr, 728) if $neg;
     return mpfrtoa($mpfr, 728);
 
+  } # close $arg->{lsd} == 0
+
+  my $m_msd = Rmpfr_init2(53);
+  my $m_lsd = Rmpfr_init2(53);
+
+  Rmpfr_set_d($m_msd, $arg->{msd}, MPFR_RNDN);
+  Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
+
+  if(abs($arg->{lsd}) >= 2 ** -1022) {
+    # lsd is not subnormal.
+    $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
+    if( ($arg->{lsd} < 0 && $arg->{msd} > 0) || ($arg->{msd} < 0 && $arg->{lsd} > 0) ) {
+      $prec--;
+      $different_signs = 1; # one double < 0, the other > 0
+    }
+    my $mpfr_copy = Rmpfr_init2(2098);
+    Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
+    Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
+    my $trial_repro = mpfrtoa($mpfr_copy);
+    my $trial_dd = Math::FakeDD->new($trial_repro);
+    if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+      $Math::FakeDD::REPRO_PREC = $prec;
+      return '-' . mpfrtoa($mpfr_copy) if $neg;
+      return mpfrtoa($mpfr_copy);
+    }
+
+    $prec++;
+    # Might need to be incremented again if the 2 doubles have different sign.
   }
   else {
+    $prec = Rmpfr_get_exp($m_msd) + 1073; # $prec could be 0
+    $prec++ if $prec == 0;                # Ensure $prec > 0
 
-    my $m_msd = Rmpfr_init2(53);
-    my $m_lsd = Rmpfr_init2(53);
-
-    Rmpfr_set_d($m_msd, $arg->{msd}, MPFR_RNDN);
-    Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
-
-    if(abs($arg->{lsd}) >= 2 ** -1022) {
-      # lsd is not subnormal.
-      $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
-      if( ($arg->{lsd} < 0 && $arg->{msd} > 0) || ($arg->{msd} < 0 && $arg->{lsd} > 0) ) {
-        $prec--;
-        $different_signs = 1; # one double < 0, the other > 0
-      }
-      my $mpfr_copy = Rmpfr_init2(2098);
-      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
-      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
-      my $trial_repro = mpfrtoa($mpfr_copy);
-      my $trial_dd = Math::FakeDD->new($trial_repro);
-      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
-        $Math::FakeDD::REPRO_PREC = $prec;
-        return '-' . mpfrtoa($mpfr_copy) if $neg;
-        return mpfrtoa($mpfr_copy);
-      }
-
-      $prec++;
-      # Might need to be incremented again if the 2 doubles have different sign.
+    my $mpfr_copy = Rmpfr_init2(2098);
+    Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
+    Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
+    my $trial_repro = mpfrtoa($mpfr_copy);
+    my $trial_dd = Math::FakeDD->new($trial_repro);
+    if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
+      $Math::FakeDD::REPRO_PREC = $prec;
+      return '-' . mpfrtoa($mpfr_copy) if $neg;
+      return mpfrtoa($mpfr_copy);
     }
-    else {
-      $prec = Rmpfr_get_exp($m_msd) + 1073; # $prec could be 0
-      $prec++ if $prec == 0;                # Ensure $prec > 0
 
-      my $mpfr_copy = Rmpfr_init2(2098);
-      Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
-      Rmpfr_prec_round($mpfr_copy, $prec, MPFR_RNDN);
-      my $trial_repro = mpfrtoa($mpfr_copy);
-      my $trial_dd = Math::FakeDD->new($trial_repro);
-      if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
-        $Math::FakeDD::REPRO_PREC = $prec;
-        return '-' . mpfrtoa($mpfr_copy) if $neg;
-        return mpfrtoa($mpfr_copy);
-      }
-
-      $prec++;
-    }
-    Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
+    $prec++;
   }
+
+  my $mpfr_orig = Rmpfr_init2(2098);
+  Rmpfr_set($mpfr_orig, $mpfr, MPFR_RNDN); # copy $mpfr to $mpfr_orig
+
+  Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
 
   if($different_signs) {
 
@@ -230,8 +228,9 @@ sub dd_repro {
     # the "round trip" test, but not both.
 
     if(abs($arg) != Math::FakeDD->new($candidate)) {
-      # Fails round trip - so we increment $prec.
-      # Can't use $mpfr; use $mpfr_orig.
+      # Fails round trip - so we increment $prec. We then
+      # can't use $mpfr again as its precision has already
+      # been altered, so we use $mpfr_orig.
 
       $prec++;
       Rmpfr_prec_round($mpfr_orig, $prec, MPFR_RNDN);
@@ -241,7 +240,7 @@ sub dd_repro {
       return mpfrtoa($mpfr_orig, 53);
     }
 
-    my $ret = _chop_test($candidate, $arg);
+    my $ret = _chop_test($candidate, $arg, 0);
 
     if($ret eq 'ok') {
       $Math::FakeDD::REPRO_PREC = $prec;
@@ -249,19 +248,48 @@ sub dd_repro {
       return $candidate;
     }
 
-    $Math::FakeDD::REPRO_PREC = "$prec overridden";
+    # The value we now return is the value calculated
+    # for precision $prec, but with the least significant
+    # mantissa digit removed.
+
+    $Math::FakeDD::REPRO_PREC = "< $prec";
     return '-' . $ret if $neg;
     return $ret;
-  }
 
-  $Math::FakeDD::REPRO_PREC = $prec;
-  return '-' . mpfrtoa($mpfr, 53) if $neg;
-  return mpfrtoa($mpfr, 53);
+  } # close different signs
+
+  else {
+    # We need to detect the (rare) case that a chopped and
+    # then incremented mantissa passes the round trip.
+
+    my $candidate = mpfrtoa($mpfr, 53);
+    my $ret = _chop_test($candidate, $arg, 1);
+
+    if($ret eq 'ok') {
+      $Math::FakeDD::REPRO_PREC = $prec;
+      return '-' . $candidate if $neg;
+      return $candidate;
+    }
+
+    $Math::FakeDD::REPRO_PREC = "> $prec";
+    return '-' . $ret if $neg;
+    return $ret;
+
+  } # close same signs
+
 }
 
 sub _chop_test {
   my @r = split /e/i, shift;
   my $op = shift;
+
+  # If $do_increment is set, then all we are not interested
+  # in the result of the chop test. We are interested in the
+  # result of the incrmentation - which we requires that we
+  # first perform the chop.
+
+  my $do_increment = defined($_[0]) ? shift
+                                    : 0;
 
   # We remove from $repro any trailing mantissa zeroes, and then
   # replace the least significant digit with zero.
@@ -280,12 +308,24 @@ sub _chop_test {
 
   return 'ok' if length($r[0]) < 2; # chop test inapplicable.
 
-  substr($r[0], -1, 1, '0');
-
+  chop $r[0];
   my $chopped = $r[0] . 'e' . $r[1];
 
-  return 'ok' if Math::FakeDD->new($chopped) < abs($op); # chop test ok.
-  return $chopped;
+  if(!$do_increment) {
+    # We are interested only in the chop test
+    return 'ok' if Math::FakeDD->new($chopped) < abs($op); # chop test ok.
+    return $chopped;
+  }
+
+  my $substitute = substr($r[0], -1, 1);
+  if($substitute < 9) {
+    $substitute++;
+    substr($r[0], -1, 1, "$substitute");
+    my $incremented = $r[0] . 'e' . $r[1];
+    return $incremented if Math::FakeDD->new($incremented) == abs($op);
+  }
+
+  return 'ok';
 }
 
 sub dd_repro_test {
