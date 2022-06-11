@@ -19,9 +19,9 @@ use warnings;
 use Math::FakeDD qw(:all);
 use Test::More;
 
-if(!$ENV{RUN_REPRO_TESTS}) {
+if($ENV{SKIP_REPRO_TESTS}) {
   is(1, 1);
-  warn "\n skipping all tests as \$ENV{RUN_REPRO_TESTS} not set\n";
+  warn "\n skipping all tests as \$ENV{SKIP_REPRO_TESTS} is set\n";
   done_testing();
   exit 0;
 }
