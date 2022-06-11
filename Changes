@@ -1,7 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
 0.04
- - More corrections to dd_repro(). (Still not 100% reliable).
+ - More corrections to dd_repro().
  - Add new test file t/sparse.t.
  - Add dd_numify() - mainly for '0+' overloading.
  - Add dd_repro_test().
