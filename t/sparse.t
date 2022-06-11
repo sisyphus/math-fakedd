@@ -62,8 +62,33 @@ print sprintx(dd_sub_4196($op1, $op2)), "\n";
 cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "ok");
 cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "$op1 - $op2 ok");
 
+
+# [0xp1+550 -0xp1-300]
+my $ret = Math::FakeDD->new(2 ** 550) - Math::FakeDD->new(2 ** -300);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0xp1+1000 0]
+$ret = Math::FakeDD->new(2 ** 1000);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1p-550] + [0xp-552] + [0x1p-600]
+$ret = Math::FakeDD->new(2 ** -550) + Math::FakeDD->new(2 ** -552) + Math::FakeDD->new(2 ** -600);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1p+550 -0x1p-300 ]
+$ret = Math::FakeDD->new(2 ** 550) - Math::FakeDD->new(2 ** -300);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1p-550 0]
+$ret = Math::FakeDD->new(2 ** -550);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1p+950 -0x1p+800]
+$ret = Math::FakeDD->new(2 ** 950) - Math::FakeDD->new(2 ** 800);
+chop_inc_test(dd_repro($ret), $ret);
+
 # [0x1p+900 -0x1p+750]
-my $ret = Math::FakeDD->new(2 ** 900) - Math::FakeDD->new(2 ** 750);
+$ret = Math::FakeDD->new(2 ** 900) - Math::FakeDD->new(2 ** 750);
 chop_inc_test(dd_repro($ret), $ret);
 
 # [-0x1p+900 0x1p+750]
@@ -92,6 +117,10 @@ chop_inc_test(dd_repro($ret), $ret);
 
 # [-0x1.ffffffffffff8p+849 0x1p-350]
 $ret = Math::FakeDD->new(2 ** 800) - Math::FakeDD->new(2 ** 850) - Math::FakeDD->new(2 **-350);
+chop_inc_test(dd_repro($ret), $ret);
+
+#[0x1p+200 0x1p-549]
+$ret = Math::FakeDD->new(2 ** 200) + Math::FakeDD->new(2 ** -549);
 chop_inc_test(dd_repro($ret), $ret);
 
 done_testing();
