@@ -178,10 +178,10 @@
 
   $str = dd_repro($obj); # "repro" short for "reproducible"
 
-   #### NOTE: This function is currently not guaranteed to work
-        as documented here. In the meantime,  you can use
-        dd_repro_test (documented below) to verify that $str has
-        been set correctly.
+   #### NOTE: This function has turned into a much uglier hack
+              than I had envisaged. See the "TODO" section below
+              for elaboration.
+
    Represent the value of $obj in decimal scientific notation,
    using as few decimal mantissa digits as possible, such that if
    this $str is assigned to a new Math::FakeDD object, then the
@@ -189,12 +189,28 @@
    of) the Math::FakeDD object from which $str was derived.
    Also set $Math::FakeDD::RETRO_PREC to the bit-precision value
    that was used in determining $str.
+   If $Math::FakeDD::REPRO_PREC begins with ">", then the value that
+   dd_repro() returned was altered slightly from the value that was
+   calculated using the specified precision (in the direction away
+   from zero).
+   If $Math::FakeDD::REPRO_PREC begins with "<", then the value that
+   dd_repro() returned was altered slightly from the value that was
+   calculated using the specified precision (in the direction
+   toward zero).
+   Other possible $Math::FakeDD::REPRO_PREC values, all of which
+   indicate that no calcuation of precision has been made, are:
+    -1: the initial value, and dd_repro() has not been called at all;
+    0 : dd_repro returned an Inf, NaN or Zero;
+    undef: perl's nvtype is DoubleDouble, so dd_repro() simply used
+           Math::MPFR::nvtoa() - which could also be buggy.
 
-  $iv = dd_repro_test(dd_repro($obj), $obj);
+  $iv = dd_repro_test(dd_repro($obj), $obj, $debug); # 3rd arg is optional
 
-   Check that dd_repro($obj) does indeed return an accurate
-   representation of $obj, using the fewest decimal mantissa
-   digits possible.
+   Check that the representation of dd_repro($obj) returned by
+   dd_repro() is accurate, and that it uses the fewest significant
+   decimal mantissa digits possible.
+   Some debugging output is provided if the third (optional) arg
+   is true.
    The function assigns its first arg, dd_repro($obj), to a
    string - let's call it $str.
 
@@ -340,6 +356,16 @@
   bits (depending upon value).
 
   All rounding is done to nearest, with ties to even.
+
+=head1 TODO
+
+  Re-factor dd_repro(), which is currently just an awful hack.
+  Also, it's possible that dd_repro() doesn't work correctly for all
+  possible DoubleDouble values. It's recommended that, if this
+  matters, then dd_repro_test() should be run to check on the
+  correctness of the values that dd_repro() returns.
+  Please report any such errors, as that will be helpful with the
+  intended re-factoring.
 
 =head1 LICENSE
 
