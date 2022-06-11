@@ -6,9 +6,9 @@ use warnings;
 use Math::FakeDD qw(:all);
 use Test::More;
 
-if(!$ENV{RUN_REPRO_TESTS}) {
+if($ENV{SKIP_REPRO_TESTS}) {
   is(1, 1);
-  warn "\n skipping all tests as \$ENV{RUN_REPRO_TESTS} not set\n";
+  warn "\n skipping all tests as \$ENV{SKIP_REPRO_TESTS} is set\n";
   done_testing();
   exit 0;
 }
@@ -62,6 +62,38 @@ print sprintx(dd_sub_4196($op1, $op2)), "\n";
 cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "ok");
 cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "$op1 - $op2 ok");
 
+# [0x1p+900 -0x1p+750]
+my $ret = Math::FakeDD->new(2 ** 900) - Math::FakeDD->new(2 ** 750);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [-0x1p+900 0x1p+750]
+$ret = Math::FakeDD->new(-(2 ** 900)) + Math::FakeDD->new(2 ** 750);
+chop_inc_test(dd_repro($ret), $ret);
+
+#[0x1p-550 -0x1p-1050]
+$ret = Math::FakeDD->new(2 ** -550) - Math::FakeDD->new(2 ** -1050);
+chop_inc_test(dd_repro($ret), $ret);
+
+#[-0x1p-550 0x1p-1050]
+$ret = Math::FakeDD->new(-(2 ** -550)) + Math::FakeDD->new(2 ** -1050);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1p+950 -0x1p+800]
+$ret = Math::FakeDD->new(2 ** 950) - Math::FakeDD->new(2 ** 800);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [-0x1p+950 0x1p+800]
+$ret = Math::FakeDD->new(-(2 ** 950)) + Math::FakeDD->new(2 ** 800);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.0000000000004p+700 -0x1p-350]
+$ret = Math::FakeDD->new(2 ** 700) + Math::FakeDD->new(2 ** 650) - Math::FakeDD->new(2 **-350);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [-0x1.ffffffffffff8p+849 0x1p-350]
+$ret = Math::FakeDD->new(2 ** 800) - Math::FakeDD->new(2 ** 850) - Math::FakeDD->new(2 **-350);
+chop_inc_test(dd_repro($ret), $ret);
+
 done_testing();
 
 sub sparse_test {
@@ -87,6 +119,9 @@ sub sparse_test {
   chop_inc_test(dd_repro($sub), $sub);
   cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "$op1 - $op2 ok");
 }
+
+# Some specific sparse examples that have posed
+#  difficulties in the past:
 
 sub chop_inc_test {
    my $res;
