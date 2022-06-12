@@ -161,16 +161,3 @@ sub dd_diag {
 }
 
 __END__
-
-## These tests currently failing because of dd_repro() bugs.
-## Other examples exist.
-
-$fudd1 = Math::FakeDD->new  ('0x1.0000000000004p+700') - Math::FakeDD->new('0x1p-350');
-chop_inc_test($fudd1);
-
-$fudd1 = Math::FakeDD->new  ('0x1p+950') - Math::FakeDD->new('0x1p+800');
- chop_inc_test($fudd1);
-
-};
-
-__END__
