@@ -10,18 +10,12 @@ if($ENV{SKIP_REPRO_TESTS}) {
   exit 0;
 }
 
-my @vp;
-my @v1;
-my @v2;
-
 for(-1075..1024) { # -348 is the largest failing exponent in this range
   my $vp = Math::FakeDD->new(  2 ** $_) ;
   my $vn = Math::FakeDD->new(-(2 ** $_));
 
   my $rp = dd_repro($vp);
   my $rn = dd_repro($vn);
-
-  push @vp, $rp;
 
   ok(chop_inc_test($rp, $vp));
   ok(chop_inc_test($rn, $vn));
@@ -48,9 +42,6 @@ for(-1075..1024) { # -348 is the largest failing exponent in this range
 
   my $r1 = dd_repro($dd1);
   my $r2 = dd_repro($dd2);
-
-  push @v1, $r1;
-  push @v2, $r2;
 
   ok(chop_inc_test($r1, $dd1));
   ok(chop_inc_test($r2, $dd2));
