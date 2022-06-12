@@ -10,19 +10,26 @@ if($ENV{SKIP_REPRO_TESTS}) {
   exit 0;
 }
 
+my @vp;
+my @v1;
+my @v2;
+
 for(-1075..1024) { # -348 is the largest failing exponent in this range
   my $vp = Math::FakeDD->new(  2 ** $_) ;
   my $vn = Math::FakeDD->new(-(2 ** $_));
 
-
   my $rp = dd_repro($vp);
   my $rn = dd_repro($vn);
+
+  push @vp, $rp;
 
   ok(chop_inc_test($rp, $vp));
   ok(chop_inc_test($rn, $vn));
 
   if(NV_IS_DOUBLEDOUBLE) {
-    # These tests are tautologically true ... should never fail
+    # These tests are tautologically true unless $ENV{DD_AVOID_NVTOA}
+    # was set to a true value before this script was run.
+
     ok($rp eq Math::MPFR::nvtoa($vp), "+(2 ** $_) agrees with nvtoa()");
     ok($rn eq Math::MPFR::nvtoa($vn), "-(2 ** $_) agrees with nvtoa()");
   }
@@ -42,11 +49,16 @@ for(-1075..1024) { # -348 is the largest failing exponent in this range
   my $r1 = dd_repro($dd1);
   my $r2 = dd_repro($dd2);
 
+  push @v1, $r1;
+  push @v2, $r2;
+
   ok(chop_inc_test($r1, $dd1));
   ok(chop_inc_test($r2, $dd2));
 
   if(NV_IS_DOUBLEDOUBLE) {
-    # These tests are tautologically true ... should never fail
+    # These tests are tautologically true unless $ENV{DD_AVOID_NVTOA}
+    # was set to a true value before this script was run.
+
     ok($r1 eq Math::MPFR::nvtoa($v1), "2 ** $_ + ..... agrees with nvtoa()");
     ok($r2 eq Math::MPFR::nvtoa($v2), "2 ** $_ + 2 ** ($_ + 1) agrees with nvtoa()");
   }
