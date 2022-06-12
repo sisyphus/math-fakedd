@@ -190,19 +190,17 @@
    Also set $Math::FakeDD::RETRO_PREC to the bit-precision value
    that was used in determining $str.
    If $Math::FakeDD::REPRO_PREC begins with ">", then the value that
-   dd_repro() returned was altered slightly from the value that was
-   calculated using the specified precision (in the direction away
-   from zero).
+   dd_repro() returned was altered slightly (away from zero) from
+   the value that was calculated using the specified precision.
    If $Math::FakeDD::REPRO_PREC begins with "<", then the value that
-   dd_repro() returned was altered slightly from the value that was
-   calculated using the specified precision (in the direction
-   toward zero).
+   dd_repro() returned was altered slightly (toward zero) from the
+   value that was calculated using the specified precision.
    Other possible $Math::FakeDD::REPRO_PREC values, all of which
    indicate that no calcuation of precision has been made, are:
     -1: the initial value, and dd_repro() has not been called at all;
     0 : dd_repro returned an Inf, NaN or Zero;
     undef: perl's nvtype is DoubleDouble, so dd_repro() simply used
-           Math::MPFR::nvtoa() - which could also be buggy.
+           Math::MPFR::nvtoa().
 
   $iv = dd_repro_test(dd_repro($obj), $obj, $debug); # 3rd arg is optional
 
