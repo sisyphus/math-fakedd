@@ -221,20 +221,29 @@ sub dd_repro {
   Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
 
   if($different_signs) {
-
     my $candidate = mpfrtoa($mpfr, 53);
 
     # Might fail either the "chop" test or
     # the "round trip" test, but not both.
 
     if(abs($arg) != Math::FakeDD->new($candidate)) {
+      # First check whether decrementing the mantissa
+      # allows the round trip to succeed.
+
+      my $ret = _decrement($candidate);
+
+      if(abs($arg) == Math::FakeDD->new($ret)) {
+        $Math::FakeDD::REPRO_PREC = "< $prec";
+        return '-' . $ret if $neg;
+        return $ret;
+      }
+
       # Fails round trip - so we increment $prec. We then
       # can't use $mpfr again as its precision has already
       # been altered, so we use $mpfr_orig.
 
       $prec++;
       Rmpfr_prec_round($mpfr_orig, $prec, MPFR_RNDN);
-
       $Math::FakeDD::REPRO_PREC = $prec;
       return '-' . mpfrtoa($mpfr_orig, 53) if $neg;
       return mpfrtoa($mpfr_orig, 53);
@@ -279,6 +288,31 @@ sub dd_repro {
 
 }
 
+sub _decrement {
+  my $shift = shift;
+  my @r = split /e/i, $shift;
+
+  # Remove all trailing zeroes from $r[0];
+
+  chop($r[0]) while $r[0] =~ /0$/;
+  $r[0] =~ s/\.$//;
+  $r[1] = defined $r[1] ? $r[1] : 0;
+  while($r[0] =~ /0$/) {
+    chop $r[0];
+    $r[1]++;
+  }
+
+  return $shift if length($r[0]) < 2;
+
+  my $substitute = substr($r[0], -1, 1) - 1;
+  substr($r[0], -1, 1, "$substitute");
+
+  my $ret = $r[1] ? $r[0] . 'e' . $r[1]
+                  : $r[0];
+
+  return $ret;
+}
+
 sub _chop_test {
   my @r = split /e/i, shift;
   my $op = shift;
@@ -309,7 +343,8 @@ sub _chop_test {
   return 'ok' if length($r[0]) < 2; # chop test inapplicable.
 
   chop $r[0];
-  my $chopped = $r[0] . 'e' . $r[1];
+  my $chopped = $r[1] ? $r[0] . 'e' . $r[1]
+                      : $r[0];
 
   if(!$do_increment) {
     # We are interested only in the chop test
@@ -321,7 +356,9 @@ sub _chop_test {
   if($substitute < 9) {
     $substitute++;
     substr($r[0], -1, 1, "$substitute");
-    my $incremented = $r[0] . 'e' . $r[1];
+    my $incremented = $r[1] ? $r[0] . 'e' . $r[1]
+                            : $r[0];
+
     return $incremented if Math::FakeDD->new($incremented) == abs($op);
   }
 
@@ -386,7 +423,10 @@ sub dd_repro_test {
 
   substr($r[0], -1, 1, '0');
 
-  my $chopped = $r[0] . 'e' . $r[1];
+
+  my $chopped = $r[1] ? $r[0] . 'e' . $r[1]
+                      : $r[0];
+
   print "CHOPPED:\n$chopped\n\n" if $debug;
 
   $ret += 2 if Math::FakeDD->new($chopped) < abs($op); # chop test ok.
@@ -397,7 +437,7 @@ sub dd_repro_test {
   # than the given $op.
 
   if($r[0] =~ /\./) {
-    # We must remove the '.', do the string increment,
+   # We must remove the '.', do the string increment,
     # and then reinsert the '.' in the appropriate place.
     my @mantissa = split /\./, $r[0];
     my $point_pos = -(length($mantissa[1]));
@@ -409,6 +449,10 @@ sub dd_repro_test {
   else {
     $r[0]++ for 1..10;
   }
+
+  my $substitute = substr($r[0], -1, 1) + 1;
+  substr($r[0], -1, 1, "$substitute");
+
   my $incremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
                                    : $r[0];
 
@@ -416,90 +460,6 @@ sub dd_repro_test {
 
   $ret += 4 if Math::FakeDD->new($incremented) > abs($op); # increment test ok
   return $ret;
-}
-
-sub _mantissa_decrement {
-  # Return the given (decimal) string arg with its
-  # ULP having been reduced by 1.
-
-  my $arg = shift;
-  die "Signed values not accepted in _mantissa_decrement()"
-    if $arg =~ /^\+|^\-/;
-  my @r = split /e/i, $arg;
-  if($r[0] =~ /\./) {
-    # We must remove the '.', do the string decrement,
-    # and then reinsert the '.' in the appropriate place.
-    my @mantissa = split /\./, $r[0];
-    my $point_pos = -(length($mantissa[1]));
-    my $t = $mantissa[0] . $mantissa[1];
-    $t = _dec($t);
-    substr($t, $point_pos, 0, '.');
-    $r[0] = $t;
-  }
-  else {
-    $r[0] = _dec($r[0]);
-  }
-  my $decremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
-                                   : $r[0];
-  return $decremented;
-}
-
-sub _dec {
-  my $arg = shift;
-
-  my $sub = 1;
-  my $carry = 0;
-  my $pos = -1;
-
-  while(1) {
-    my $op = substr($arg, $pos, 1);
-    my $rep = $op - $sub;
-    if($rep < 0) {
-      $rep += 10;
-      $carry = 10;
-    }
-    else { $carry = 0 }
-
-    substr($arg, $pos, 1, $rep);
-
-    die "_dec() is buggy (overflowed)"
-      if length $arg < -$pos;
-
-    last unless $carry;
-
-    $pos--;
-  }
-
-  return '0' unless $arg =~ /[1-9]/;
-  $arg =~ s/^0+//;
-  return $arg;
-
-}
-
-sub _mantissa_increment {
-  # Return the given (decimal) string arg with its
-  # ULP having been raised by 1.
-
-  my $arg = shift;
-  die "Signed values not accepted in _mantissa_increment()"
-    if $arg =~ /^\+|^\-/;
-  my @r = split /e/i, $arg;
-  if($r[0] =~ /\./) {
-    # We must remove the '.', do the string decrement,
-    # and then reinsert the '.' in the appropriate place.
-    my @mantissa = split /\./, $r[0];
-    my $point_pos = -(length($mantissa[1]));
-    my $t = $mantissa[0] . $mantissa[1];
-    $t++ for 1..10;
-    substr($t, $point_pos, 0, '.');
-    $r[0] = $t;
-  }
-  else {
-    $r[0]++ for 1..10;
-  }
-  my $incremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
-                                   : $r[0];
-  return $incremented;
 }
 
 sub dd_abs {
@@ -1522,4 +1482,3 @@ sub unpackx {
 }
 
 1;
-
