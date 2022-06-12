@@ -73,7 +73,8 @@ unless(NV_IS_DOUBLEDOUBLE) {
     cmp_ok(Math::FakeDD->new(3) ** 0.6  , '!=', 3 ** Math::FakeDD->new('0.6'), "4:'**' overloading ok");
   }
   else {
-    # These tests should pass if NV_IS_DOUBLE
+    # Because of the extra precision, these
+    # tests should pass if NV_IS_QUAD.
     cmp_ok(Math::FakeDD->new($s1), '==', Math::FakeDD->new($s2), "DD 3**0.6 == DD 3**'0.6'");
     cmp_ok(Math::FakeDD->new(3) ** 0.6  , '==', 3 ** Math::FakeDD->new('0.6'), "4:'**' overloading ok");
   }
