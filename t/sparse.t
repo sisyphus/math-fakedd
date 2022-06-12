@@ -123,6 +123,47 @@ chop_inc_test(dd_repro($ret), $ret);
 $ret = Math::FakeDD->new(2 ** 200) + Math::FakeDD->new(2 ** -549);
 chop_inc_test(dd_repro($ret), $ret);
 
+#[0x1p+200 -0x1p-549]
+$ret = Math::FakeDD->new(2 ** 200) - Math::FakeDD->new(2 ** -549);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 0x1p-549]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') + Math::FakeDD->new(2 ** -549);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 -0x1p-549]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -549);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 -0x1p-548]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -548);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 -0x1p-550]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -550);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 -0x1p-551]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -551);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 -0x1p-548 - 0xp-555]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -548) - Math::FakeDD->new(2 ** -555);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 -0x1p-549 - 0xp-556]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -549) - Math::FakeDD->new(2 ** -556) ;
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 -0x1p-550 - 0xp-557]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -550) - Math::FakeDD->new(2 ** -557);
+chop_inc_test(dd_repro($ret), $ret);
+
+# [0x1.ffffffffffff8p+999 -0x1p-551 - 0xp-558]
+$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -551) - Math::FakeDD->new(2 ** -558);
+chop_inc_test(dd_repro($ret), $ret);
+
+
 done_testing();
 
 sub sparse_test {
@@ -149,9 +190,6 @@ sub sparse_test {
   cmp_ok($sub, '==', dd_sub_4196($op1, $op2), "$op1 - $op2 ok");
 }
 
-# Some specific sparse examples that have posed
-#  difficulties in the past:
-
 sub chop_inc_test {
    my $res;
    my ($repro, $op) = (shift, shift);
@@ -169,3 +207,7 @@ sub dd_diag {
   print STDERR "Failed chop test for " . sprintx($_[1])      . "\n" unless $_[0] & 2;
   print STDERR "Failed increment test for " . sprintx($_[1]) . "\n" unless $_[0] & 4;
 }
+
+
+__END__
+
