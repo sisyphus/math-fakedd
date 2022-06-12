@@ -16,6 +16,13 @@ use constant NV_IS_DOUBLE       => $Config{nvsize} == 8        ? 1 : 0;
 use constant NV_IS_DOUBLEDOUBLE => $Config{nvsize} != 8 &&
                                    ($Config{longdblkind} >=5 && $Config{longdblkind} <= 8) ? 1 : 0;
 
+# On a DoubleDouble build we might want dd_repro() to NOT
+# use Math::MPFR::nvtoa() - eg for testing. In that case
+# we simply set $ENV{DD_AVOID_NVTOA} to a true value before
+# loading Math::FakeDD.
+
+use constant DD_AVOID_NVTOA      => $ENV{DD_AVOID_NVTOA} ? 1 : 0;
+
 use constant NV_IS_QUAD => $Config{nvtype} eq '__float128' ||
                            ($Config{nvtype} eq 'long double' && $Config{longdblkind} > 0
                               && $Config{longdblkind} < 3)                                 ? 1 : 0;
@@ -61,7 +68,7 @@ require Exporter;
 *import = \&Exporter::import;
 
 @Math::FakeDD::EXPORT_OK = qw(
-  NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
+  NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION DD_AVOID_NVTOA
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
   dd_mul dd_mul_eq dd_nan dd_neq dd_numify dd_pow dd_pow_eq dd_repro dd_repro_test
@@ -127,7 +134,7 @@ sub dd_repro {
     return '0.0';
   }
 
-  if(NV_IS_DOUBLEDOUBLE) {
+  if(NV_IS_DOUBLEDOUBLE && !DD_AVOID_NVTOA) {
     $Math::FakeDD::REPRO_PREC = undef; # nvtoa() doesn't tell us the precision.
     return nvtoa($arg->{msd} + $arg->{lsd});
   }
