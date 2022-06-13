@@ -1,5 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
+0.05
+
 0.04
  - More corrections to dd_repro().
  - Add new test file t/sparse.t.
