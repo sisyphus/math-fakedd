@@ -80,7 +80,7 @@ require Exporter;
 
 %Math::FakeDD::EXPORT_TAGS = (all =>[@Math::FakeDD::EXPORT_OK]);
 
-$Math::FakeDD::VERSION =  '0.04';
+$Math::FakeDD::VERSION =  '0.05';
 
 # Whenever dd_repro($obj) returns its string representation of
 # the value of $obj, $Math::FakeDD::REPRO_PREC is set to the
