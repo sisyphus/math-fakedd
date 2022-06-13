@@ -41,7 +41,19 @@
               # as for string arg of '0.1'.
 
   Generally, providing a string argument will DWYW, whereas providing a
-  floating-point (NV) argument won't.
+  floating-point (NV) argument won't. (Of course, exceptions exist and
+  you should familiarise yourself with the difference if it is not
+  already clear to you.)
+
+  printx($obj); # Same as for print() execept that values are in hex.
+  print sprintx($obj);  # Same as 'printx($obj)'.
+  print dd_repro($obj); # $obj in scientific notation (in decimal).
+
+  # Verify that the string returned by dd_repro($obj) is correct:
+  print "ok" if dd_repro_test(dd_repro($obj), $obj) == 7;
+
+  print dd_dec($obj); # Exact representation of the value held by $obj,
+                      # in scientific notation .
 
   NOTES: In the following documentation:
 
@@ -67,6 +79,9 @@
 
 =head1 ARITHMETIC FUNCTIONS
 
+  Use either the functions, or the overloaded
+  operations (that use these functions).
+
   $obj = dd_add($arg1, $arg2);
   $obj = dd_sub($arg1, $arg2);
   $obj = dd_mul($arg1, $arg2);
@@ -75,10 +90,10 @@
    Returns a Math::FakeDD object with the value of $arg1
    (respectively) plus, minus, multiplied by or divided by $arg2.
 
-  dd_add($obj, $arg);
-  dd_sub($obj, $arg);
-  dd_mul($obj, $arg);
-  dd_div($obj, $arg);
+  dd_add_eq($obj, $arg);
+  dd_sub_eq($obj, $arg);
+  dd_mul_eq($obj, $arg);
+  dd_div_eq($obj, $arg);
 
    The value in $obj is (respectively) incremented, decremented,
    multiplied or divided by $arg.
@@ -86,6 +101,7 @@
   $obj = dd_pow($arg1, $arg2);
 
    Return a Math::FakeDD object that contains $arg1 ** $arg2.
+
 
   dd_pow_eq($obj, $arg);
 
