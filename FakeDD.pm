@@ -197,16 +197,16 @@ sub dd_repro {
     my $trial_dd = Math::FakeDD->new($trial_repro);
     if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
       $Math::FakeDD::REPRO_PREC = $prec;
-      return '-' . mpfrtoa($mpfr_copy) if $neg;
-      return mpfrtoa($mpfr_copy);
+      return '-' . $trial_repro if $neg;
+      return $trial_repro;
     }
 
     $prec++;
     # Might need to be incremented again if the 2 doubles have different sign.
   }
   else {
-    $prec = Rmpfr_get_exp($m_msd) + 1073; # $prec could be 0
-    $prec++ if $prec == 0;                # Ensure $prec > 0
+    $prec = Rmpfr_get_exp($m_msd) + 1073; # $prec should be > 0
+    #$prec++ if $prec == 0;                # Ensure $prec > 0
 
     my $mpfr_copy = Rmpfr_init2(2098);
     Rmpfr_set($mpfr_copy, $mpfr, MPFR_RNDN);
@@ -215,8 +215,8 @@ sub dd_repro {
     my $trial_dd = Math::FakeDD->new($trial_repro);
     if($trial_dd == $arg || ($neg == 1 && $trial_dd == abs($arg)) ) {
       $Math::FakeDD::REPRO_PREC = $prec;
-      return '-' . mpfrtoa($mpfr_copy) if $neg;
-      return mpfrtoa($mpfr_copy);
+      return '-' . $trial_repro if $neg;
+      return $trial_repro;
     }
 
     $prec++;
@@ -278,13 +278,13 @@ sub dd_repro {
     # We need to detect the (rare) case that a chopped and
     # then incremented mantissa passes the round trip.
 
-    my $candidate = mpfrtoa($mpfr, 53);
-    my $ret = _chop_test($candidate, $arg, 1);
+    my $can = mpfrtoa($mpfr, 53);
+    my $ret = _chop_test($can, $arg, 1);
 
     if($ret eq 'ok') {
       $Math::FakeDD::REPRO_PREC = $prec;
-      return '-' . $candidate if $neg;
-      return $candidate;
+      return '-' . $can if $neg;
+      return $can;
     }
 
     $Math::FakeDD::REPRO_PREC = "> $prec";
@@ -301,7 +301,10 @@ sub _decrement {
 
   # Remove all trailing zeroes from $r[0];
 
-  chop($r[0]) while $r[0] =~ /0$/;
+  if($r[0] =~ /\./) {
+    chop($r[0]) while $r[0] =~ /0$/;
+  }
+
   $r[0] =~ s/\.$//;
   $r[1] = defined $r[1] ? $r[1] : 0;
   while($r[0] =~ /0$/) {
@@ -332,7 +335,7 @@ sub _chop_test {
   my $do_increment = defined($_[0]) ? shift
                                     : 0;
 
-  # We remove from $repro any trailing mantissa zeroes, and then
+  # We remove from $r[0] any trailing mantissa zeroes, and then
   # replace the least significant digit with zero.
   # IOW, we effectively chop off the least siginificant digit, thereby
   # rounding it down to the next lowest decimal precision.)
@@ -349,7 +352,12 @@ sub _chop_test {
 
   return 'ok' if length($r[0]) < 2; # chop test inapplicable.
 
-  chop $r[0];
+  substr($r[0], -1, 1, '0');
+
+#  my $chop = chop($r[0]);
+#  $r[1]++ unless $chop =~ /\./;
+#  $chop =~ s/\.$/.0/;
+
   my $chopped = $r[1] ? $r[0] . 'e' . $r[1]
                       : $r[0];
 
@@ -359,16 +367,37 @@ sub _chop_test {
     return $chopped;
   }
 
-  my $substitute = substr($r[0], -1, 1);
-  if($substitute < 9) {
-    $substitute++;
-    substr($r[0], -1, 1, "$substitute");
-    my $incremented = $r[1] ? $r[0] . 'e' . $r[1]
-                            : $r[0];
+  # We are not interested in the chop test - the "chop" was
+  # done only as the first step in the incrementation, and
+  # it's the result of the following  incrementation that
+  # interests us. Now we want, in effect, to do:
+  #  chop $r[0];
+  #  ++$r[0];
+  # This value should then assign to a  DoubleDouble value
+  # that is greater than the given $op.
 
-    return $incremented if Math::FakeDD->new($incremented) == abs($op);
+  if($r[0] =~ /\./) {
+    # We must remove the '.', do the string increment,
+    # and then reinsert the '.' in the appropriate place.
+    my @mantissa = split /\./, $r[0];
+    my $point_pos = -(length($mantissa[1]));
+    my $t = $mantissa[0] . $mantissa[1];
+    $t++ for 1..10;
+    substr($t, $point_pos, 0, '.');
+    $r[0] = $t;
+  }
+  else {
+    $r[0]++ for 1..10;
+    $r[1]++ while $r[0] =~ s/0$//;
   }
 
+  my $substitute = substr($r[0], -1, 1) + 1;
+  substr($r[0], -1, 1, "$substitute");
+
+  my $incremented = $r[1] ? $r[0] . 'e' . $r[1]
+                                   : $r[0];
+
+  return $incremented if Math::FakeDD->new($incremented) == abs($op);
   return 'ok';
 }
 
