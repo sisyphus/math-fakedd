@@ -67,7 +67,7 @@ use overload
 require Exporter;
 *import = \&Exporter::import;
 
-@Math::FakeDD::EXPORT_OK = qw(
+my @tags = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION DD_AVOID_NVTOA
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
@@ -78,7 +78,9 @@ require Exporter;
   printx sprintx unpackx
 );
 
-%Math::FakeDD::EXPORT_TAGS = (all =>[@Math::FakeDD::EXPORT_OK]);
+@Math::FakeDD::EXPORT_OK = (@tags);
+
+%Math::FakeDD::EXPORT_TAGS = (all => [@tags]);
 
 $Math::FakeDD::VERSION =  '0.05';
 
@@ -352,17 +354,19 @@ sub _chop_test {
 
   return 'ok' if length($r[0]) < 2; # chop test inapplicable.
 
-  substr($r[0], -1, 1, '0');
+  substr($r[0], -1, 1, '');
 
-#  my $chop = chop($r[0]);
-#  $r[1]++ unless $chop =~ /\./;
-#  $chop =~ s/\.$/.0/;
-
-  my $chopped = $r[1] ? $r[0] . 'e' . $r[1]
-                      : $r[0];
+  $r[1]++ unless $r[0] =~ /\./;
+  $r[0] =~ s/\.$/.0/
+    unless $r[1];
+  $r[0] =~ s/\.$//;
 
   if(!$do_increment) {
     # We are interested only in the chop test
+
+    my $chopped = $r[1] ? $r[0] . 'e' . $r[1]
+                        : $r[0];
+
     return 'ok' if Math::FakeDD->new($chopped) < abs($op); # chop test ok.
     return $chopped;
   }
@@ -371,7 +375,6 @@ sub _chop_test {
   # done only as the first step in the incrementation, and
   # it's the result of the following  incrementation that
   # interests us. Now we want, in effect, to do:
-  #  chop $r[0];
   #  ++$r[0];
   # This value should then assign to a  DoubleDouble value
   # that is greater than the given $op.
@@ -382,20 +385,17 @@ sub _chop_test {
     my @mantissa = split /\./, $r[0];
     my $point_pos = -(length($mantissa[1]));
     my $t = $mantissa[0] . $mantissa[1];
-    $t++ for 1..10;
+    $t++;
     substr($t, $point_pos, 0, '.');
     $r[0] = $t;
   }
   else {
-    $r[0]++ for 1..10;
+    $r[0]++;
     $r[1]++ while $r[0] =~ s/0$//;
   }
 
-  my $substitute = substr($r[0], -1, 1) + 1;
-  substr($r[0], -1, 1, "$substitute");
-
   my $incremented = $r[1] ? $r[0] . 'e' . $r[1]
-                                   : $r[0];
+                          : $r[0];
 
   return $incremented if Math::FakeDD->new($incremented) == abs($op);
   return 'ok';
@@ -412,18 +412,18 @@ sub dd_repro_test {
 
   # Handle Infs, Nan, and Zero.
   if(dd_is_nan($op)) {
-    return 7 if $repro =~ /^nan$/i;
+    return 15 if $repro eq 'NaN';
     return 0;
   }
 
   if(dd_is_inf($op)) {
-    return 7 if ($op > 0 && $repro =~ /^inf$/i);
-    return 7 if ($op < 0 && $repro =~ /^\-inf$/i);
+    return 15 if ($op > 0 && $repro eq 'Inf');
+    return 15 if ($op < 0 && $repro eq '-Inf');
     return 0;
   }
 
   if($op == 0) {
-    return 7 if $repro eq '0.0';
+    return 15 if ($repro eq '0.0' || $repro eq '-0.0');
     return 0;
   }
 
@@ -440,6 +440,17 @@ sub dd_repro_test {
     else { print " no exponent\n" }
   }
 
+  # Increment $ret by 8 if and only if there are no errant trailing
+  # zeroes in $r[0] .
+
+  if(!defined($r[1])) {
+    $ret += 8 if ($r[0] =~ /\.0$/ || $r[0] !~ /0$/);
+    $r[1] = 0;       # define $r[1] by setting it to zero.
+  }
+  else {
+   $ret += 8 unless $r[0] =~ /0$/;
+  }
+
   # We remove from $repro any trailing mantissa zeroes, and then
   # replace the least significant digit with zero.
   # IOW, we effectively chop off the least siginificant digit, thereby
@@ -449,7 +460,6 @@ sub dd_repro_test {
 
   chop($r[0]) while $r[0] =~ /0$/;
   $r[0] =~ s/\.$//;
-  $r[1] = defined $r[1] ? $r[1] : 0;
   while($r[0] =~ /0$/) {
     chop $r[0];
     $r[1]++;
@@ -1516,5 +1526,22 @@ sub unpackx {
   }
   die "Wrong arg given to unpackx()";
 }
+
+#sub tz_test {
+#  # Detect any unwanted trailing zeroes
+#  # in values returned by nvtoa().
+#
+#  my $s = shift;
+#  my @r = split /e/i, $s;
+#
+#  if(!defined($r[1])) {
+#    return 1 if $r[0] =~ /\.0$/; # pass
+#    return 0 if $r[0] =~ /0$/;   # fail
+#  }
+#
+#  return 0 if $r[0] =~ /0$/;     # fail (for our formatting convention)
+#  return 1;                      # pass
+#}
+
 
 1;
