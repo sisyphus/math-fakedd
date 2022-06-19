@@ -1,6 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
 0.05
+ - Extra test (for correct handling of trailing zeros) added to dd_repro_test()
 
 0.04
  - More corrections to dd_repro().
