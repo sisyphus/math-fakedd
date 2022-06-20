@@ -24,9 +24,6 @@ for(-1075..1024) { # -348 is the largest failing exponent in this range
   ok(chop_inc_test($rn, $vn));
 
   if(NV_IS_DOUBLEDOUBLE) {
-    # These tests are tautologically true unless $ENV{DD_AVOID_NVTOA}
-    # was set to a true value before this script was run.
-
     ok($rp eq Math::MPFR::nvtoa($vp), "+(2 ** $_) agrees with nvtoa()");
     ok($rn eq Math::MPFR::nvtoa($vn), "-(2 ** $_) agrees with nvtoa()");
   }
@@ -53,9 +50,6 @@ for(-1075..1024) { # -348 is the largest failing exponent in this range
   ok(chop_inc_test($r2, $dd2));
 
   if(NV_IS_DOUBLEDOUBLE) {
-    # These tests are tautologically true unless $ENV{DD_AVOID_NVTOA}
-    # was set to a true value before this script was run.
-
     ok($r1 eq Math::MPFR::nvtoa($v1), "2 ** $_ + ..... agrees with nvtoa()");
     ok($r2 eq Math::MPFR::nvtoa($v2), "2 ** $_ + 2 ** ($_ + 1) agrees with nvtoa()");
   }
