@@ -10,6 +10,7 @@ t/assign.t
 t/cmp.t
 t/dd_repro_basics.t
 t/div.t
+t/exp_log.t
 t/mul.t
 t/mpfr2dd.t
 t/new.t
