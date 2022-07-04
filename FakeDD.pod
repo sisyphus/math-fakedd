@@ -120,13 +120,19 @@
 =head1 EXPONENTIATION FUNCTIONS
 
   $obj = dd_exp($arg);
+  $obj = dd_exp2($arg);
+  $obj = dd_exp10($arg);
 
-   Return a Math::FakeDD object that contains e ** $arg.
+   Return a Math::FakeDD object that contains respectively
+   e ** $arg, 2 ** $arg, 10 ** $arg.
 
   $obj = dd_log($arg);
+  $obj = dd_log2($arg);
+  $obj = dd_log10($arg);
 
-   Return a Math::FakeDD object that contains the natural
-   logarithm of $arg.
+   Return a Math::FakeDD object that contains respectively
+   the natural log of $arg, the base 2 log of $arg, the
+   base 10 log of $arg..
 
 =head1 TRIGONOMETRY FUNCTIONS
 
