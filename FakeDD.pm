@@ -63,7 +63,8 @@ require Exporter;
 my @tags = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
-  dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_lt dd_lte
+  dd_exp2 dd_exp10
+  dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_log2 dd_log10 dd_lt dd_lte
   dd_mul dd_mul_eq dd_nan dd_neq dd_numify dd_pow dd_pow_eq dd_repro dd_repro_test
   dd_sin dd_spaceship dd_sqrt dd_streq dd_stringify dd_strne
   dd_sub dd_sub_eq
@@ -839,6 +840,36 @@ sub dd_exp {
   return $ret;
 }
 
+sub dd_exp2 {
+  my $obj;
+  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
+  else {
+    $obj = Math::FakeDD->new(shift);
+  }
+  my $ret = Math::FakeDD->new();
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_exp2($mpfr, dd2mpfr($obj), MPFR_RNDN);
+  $obj = mpfr2dd($mpfr);
+  $ret->{msd} = $obj->{msd};
+  $ret->{lsd} = $obj->{lsd};
+  return $ret;
+}
+
+sub dd_exp10 {
+  my $obj;
+  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
+  else {
+    $obj = Math::FakeDD->new(shift);
+  }
+  my $ret = Math::FakeDD->new();
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_exp10($mpfr, dd2mpfr($obj), MPFR_RNDN);
+  $obj = mpfr2dd($mpfr);
+  $ret->{msd} = $obj->{msd};
+  $ret->{lsd} = $obj->{lsd};
+  return $ret;
+}
+
 sub dd_gt {
 
   # When dd_gt is called via overloading of '>' a third
@@ -919,6 +950,36 @@ sub dd_log {
   my $ret = Math::FakeDD->new();
   my $mpfr = Rmpfr_init2(2098);
   Rmpfr_log($mpfr, dd2mpfr($obj), MPFR_RNDN);
+  $obj = mpfr2dd($mpfr);
+  $ret->{msd} = $obj->{msd};
+  $ret->{lsd} = $obj->{lsd};
+  return $ret;
+}
+
+sub dd_log2 {
+  my $obj;
+  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
+  else {
+    $obj = Math::FakeDD->new(shift);
+  }
+  my $ret = Math::FakeDD->new();
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_log2($mpfr, dd2mpfr($obj), MPFR_RNDN);
+  $obj = mpfr2dd($mpfr);
+  $ret->{msd} = $obj->{msd};
+  $ret->{lsd} = $obj->{lsd};
+  return $ret;
+}
+
+sub dd_log10 {
+  my $obj;
+  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
+  else {
+    $obj = Math::FakeDD->new(shift);
+  }
+  my $ret = Math::FakeDD->new();
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_log10($mpfr, dd2mpfr($obj), MPFR_RNDN);
   $obj = mpfr2dd($mpfr);
   $ret->{msd} = $obj->{msd};
   $ret->{lsd} = $obj->{lsd};
