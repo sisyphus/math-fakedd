@@ -62,10 +62,10 @@ require Exporter;
 
 my @tags = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
-  dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_cmp dd_cos dd_dec dd_div dd_div_eq dd_eq dd_exp
-  dd_exp2 dd_exp10
+  dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_catalan dd_cmp dd_cos dd_dec dd_div dd_div_eq
+  dd_eq dd_euler dd_exp dd_exp2 dd_exp10
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_log2 dd_log10 dd_lt dd_lte
-  dd_mul dd_mul_eq dd_nan dd_neq dd_numify dd_pow dd_pow_eq dd_repro dd_repro_test
+  dd_mul dd_mul_eq dd_nan dd_neq dd_numify dd_pi dd_pow dd_pow_eq dd_repro dd_repro_test
   dd_sin dd_spaceship dd_sqrt dd_streq dd_stringify dd_strne
   dd_sub dd_sub_eq
   dd2mpfr mpfr2dd mpfr_any_prec2dd mpfr2098
@@ -664,6 +664,12 @@ sub dd_atan2 {
   return mpfr2dd($rop1);
 }
 
+sub dd_catalan {
+  my $rop = Rmpfr_init2(2098);
+  Rmpfr_const_catalan($rop, MPFR_RNDN);
+  return mpfr2dd($rop);
+}
+
 
 sub dd_cmp {
 
@@ -823,6 +829,12 @@ sub dd_eq {
   my $cmp = dd_cmp(shift, shift);
   return 0 if $cmp || !defined $cmp; # not equal
   return 1;                          # equal
+}
+
+sub dd_euler {
+  my $rop = Rmpfr_init2(2098);
+  Rmpfr_const_euler($rop, MPFR_RNDN);
+  return mpfr2dd($rop);
 }
 
 sub dd_exp {
@@ -1123,6 +1135,12 @@ sub dd_numify {
   my $arg = shift;
   return $arg->{msd} + $arg->{lsd}; # Information might be lost if
                                     # NV type is not DoubleDouble.
+}
+
+sub dd_pi {
+  my $rop = Rmpfr_init2(2098);
+  Rmpfr_const_pi($rop, MPFR_RNDN);
+  return mpfr2dd($rop);
 }
 
 sub dd_pow {
