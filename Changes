@@ -3,6 +3,7 @@ Revision history for Perl module Math::FakeDD
 0.05
  - Extra test (for correct handling of trailing zeros) added to dd_repro_test()
  - Add dd_exp2, dd_exp10, dd_log2 and dd_log10 functions.
+ - Add dd_pi, dd_euler and dd_catalan functions.
 
 0.04
  - More corrections to dd_repro().
