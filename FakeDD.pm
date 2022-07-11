@@ -143,9 +143,6 @@ sub dd_repro {
     $neg = 1;
   }
 
-  my $different_signs = 0; # will be set to 1 if one double < 0,
-                           # and the other double > 0.
-
   my $exp = Rmpfr_get_exp($mpfr);
 
   if($arg->{lsd} == 0) {
@@ -178,6 +175,9 @@ sub dd_repro {
 
   Rmpfr_set_d($m_msd, $arg->{msd}, MPFR_RNDN);
   Rmpfr_set_d($m_lsd, $arg->{lsd}, MPFR_RNDN);
+
+  my $different_signs = 0; # will be set to 1 if one double < 0,
+                           # and the other double > 0.
 
   if(abs($arg->{lsd}) >= 2 ** -1022) {
     # lsd is not subnormal.
@@ -270,24 +270,22 @@ sub dd_repro {
 
   } # close different signs
 
-  else {
-    # We need to detect the (rare) case that a chopped and
-    # then incremented mantissa passes the round trip.
+  # msd and lsd are either both >0, or both <0.
+  # We need to detect the (rare) case that a chopped and
+  # then incremented mantissa passes the round trip.
 
-    my $can = mpfrtoa($mpfr, 53);
-    my $ret = _chop_test($can, $arg, 1);
+  my $can = mpfrtoa($mpfr, 53);
+  my $ret = _chop_test($can, $arg, 1);
 
-    if($ret eq 'ok') {
-      $Math::FakeDD::REPRO_PREC = $prec;
-      return '-' . $can if $neg;
-      return $can;
-    }
+  if($ret eq 'ok') {
+    $Math::FakeDD::REPRO_PREC = $prec;
+    return '-' . $can if $neg;
+    return $can;
+  }
 
-    $Math::FakeDD::REPRO_PREC = "> $prec";
-    return '-' . $ret if $neg;
-    return $ret;
-
-  } # close same signs
+  $Math::FakeDD::REPRO_PREC = "> $prec";
+  return '-' . $ret if $neg;
+  return $ret;
 
 }
 
