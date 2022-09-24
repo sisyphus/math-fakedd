@@ -4,6 +4,7 @@
 use strict;
 use warnings;
 use Math::FakeDD qw(:all);
+use Config;
 use Test::More;
 
 my $v = '1.73205080756887729352744634150587232';
@@ -56,7 +57,8 @@ $log10 = dd_log10($s1);
 $repro = dd_repro($log10);
 ok(dd_repro_test($repro, $log10) == 15, "dd_log10($s1) ok");
 
-ok($log10 == 23, "log10($s1) == 23");
+my $correct1 = $Config{ivsize} == 4 ? 12 : 23;
+ok($log10 == $correct1, "log10($s1) == $correct1"); # 12
 
 my $s2 = $s1;
 $s2++;
@@ -65,14 +67,15 @@ $log10 = dd_log10($s2);
 $repro = dd_repro($log10);
 ok(dd_repro_test($repro, $log10) == 15, "dd_log10($s2) ok");
 
-ok($log10 > 23, "log10($s2) > 23");
+ok($log10 > $correct1, "log10($s2) > $correct1");
 
 $log2 = dd_log2("$t_plus");
 
 $repro = dd_repro($log2);
 ok(dd_repro_test($repro, $log2) == 15, "dd_log2($t_plus) ok");
 
-ok($log2 == 64, "log2($t_plus) == 64");
+my $correct2 = $Config{ivsize} == 4 ? 32 : 64;
+ok($log2 == $correct2, "log2($t_plus) == $correct2");
 
 $exp2 = dd_exp2($log2);
 
@@ -83,10 +86,16 @@ $log2 = dd_log2($t_0);
 $repro = dd_repro($log2);
 ok(dd_repro_test($repro, $log2) == 15, "dd_log2($t_0) ok");  # 18
 
-ok($log2 < 64, "dd_log2($t_0) < 64");        # 19
+ok($log2 < $correct2, "dd_log2($t_0) < $correct2");        # 19
 
 $exp2 = dd_exp2($log2);
-ok($exp2 == $t_0, "dd_exp2($log2) == $t_0"); # 20
+
+if($Config{ivsize} == 8) {
+   ok($exp2 == $t_0, "dd_exp2($log2) == $t_0"); # 20
+}
+else {
+   ok($exp2->{msd} == 4294967295 && $exp2->{lsd} < 4e-23, "dd_exp2($log2) approximates $t_0"); # 20
+}
 
 done_testing();
 
