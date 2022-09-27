@@ -1,11 +1,15 @@
 Revision history for Perl module Math::FakeDD
 
+0.06
+ - Doc fix for FakeDD.pod -see https://github.com/sisyphus/math-fakedd/issues/1
+   Thanks, Peter Acklam.
+
 0.05
  - Extra test (for correct handling of trailing zeros) added to dd_repro_test()
  - Add dd_exp2, dd_exp10, dd_log2 and dd_log10 functions.
  - Add dd_pi, dd_euler and dd_catalan functions.
  - In Makefile.PL, overwrite INSTALLSITELIB to $Config::Config{installsitearch} to
-   ensure that Math::FakeDD is installed into site/lib/<archname>.
+   ensure that Math::FakeDD is installed into site/lib/<archname> when applicable.
 
 0.04
  - More corrections to dd_repro().
