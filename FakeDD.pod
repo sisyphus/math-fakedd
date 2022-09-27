@@ -141,7 +141,7 @@
   $obj = dd_catalan();
 
   Return (respectively) pi (3.141...), Euler's constant (0.577...)
-  and Catalan's constant (0.577...) .
+  and Catalan's constant (0.915...) .
 
 =head1 TRIGONOMETRY FUNCTIONS
 
