@@ -3,13 +3,14 @@
 # Overloading of '-' and '-=' is tested in t/sub.t
 # Overloading of '*' and '*=' is tested in t/mul.t
 # Overloading of '/' and '/=' is tested in t/div.t
+# Overloading of '='          is tested in t/assign.t
 
 use strict;
 use warnings;
 use Math::FakeDD qw(:all);
 use Test::More;
 
-cmp_ok($Math::FakeDD::VERSION, '==', 0.05, "Version number is correct");
+cmp_ok($Math::FakeDD::VERSION, '==', 0.06, "Version number is correct");
 
 my $obj = Math::FakeDD->new();
 
@@ -98,7 +99,7 @@ cmp_ok($fudd1, '==', int($fudd2), "(2 ** 100) < int((2 ** 100) + (2 **-100))");
 
 my %oload = Math::FakeDD::oload();
 
-cmp_ok(scalar keys(%oload), '==', 31, "Math::FakeDD::oload relative sizes ok");
+cmp_ok(scalar keys(%oload), '==', 32, "Math::FakeDD::oload relative sizes ok");
 
 for(0.2, 0.3, 0.4, 0.50, 0.6, 0.8, 1, 2) {
 
