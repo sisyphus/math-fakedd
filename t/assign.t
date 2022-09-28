@@ -40,4 +40,7 @@ $x *= 4;
 cmp_ok($y, '==', 2.5, 'the value of the copy is unaltered');
 cmp_ok($x, '==', 10, 'the original value is reset correctly');
 
+$y = $x;
+cmp_ok($y, '==', 10, 'the copy is updated correctly');
+
 done_testing();
