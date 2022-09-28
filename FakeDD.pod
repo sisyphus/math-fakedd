@@ -304,14 +304,15 @@
    bool, !,
    atan2, cos, sin
    eq, ne
+   =
 
   Run
     my %oloads = Math::FakeDD::oload();
 
   The keys are the overloaded operations, and their respective values
   name the functions used in the respective operation.
-  These functions are documented above - except for dd_true() and
-  dd_false() which are documented here:
+  These functions are documented above - except for dd_true(),
+  dd_false() and overload_copy(), which are documented here:
 
   $iv = dd_true($obj);
 
@@ -328,6 +329,9 @@
    Returns 1 if $obj is NaN or zero; else returns 0.
    (This is the same criterion as used by Math::MPFR's overloading
    of '!'.)
+
+  $obj2 = $obj1; # Utilizes overload_copy()
+   Use the unexported overload_copy() sub to copy $obj1 to $obj2.
 
 =head1 OTHER FUNCTIONS
 
