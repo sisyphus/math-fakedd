@@ -55,6 +55,7 @@ use overload
 '-'     => \&dd_sub,
 '-='    => \&dd_sub_eq,
 '!'     => \&dd_false,
+'='     => \&overload_copy,
 ;
 
 require Exporter;
@@ -76,7 +77,7 @@ my @tags = qw(
 
 %Math::FakeDD::EXPORT_TAGS = (all => [@tags]);
 
-$Math::FakeDD::VERSION =  '0.05';
+$Math::FakeDD::VERSION =  '0.06';
 
 # Whenever dd_repro($obj) returns its string representation of
 # the value of $obj, $Math::FakeDD::REPRO_PREC is set to the
@@ -1491,6 +1492,13 @@ sub mpfr2098 {
 
 }
 
+sub overload_copy {
+  # Not exported
+  my $ret = Math::FakeDD->new();
+  dd_assign($ret, $_[0]);
+  return $ret;
+}
+
 sub oload {
   # Not exported.
   # Return a list of the operator-function pairs for the overloaded
@@ -1528,6 +1536,7 @@ sub oload {
     '-'     => 'dd_sub',
     '-='    => 'dd_sub_eq',
     '!'     => 'dd_false',
+    '='     => 'overload_copy',
 );
 
   return %h
