@@ -1,4 +1,4 @@
-
+# Run checks on dd_assign and overload_copy
 use strict;
 use warnings;
 use Math::FakeDD qw(:all);
@@ -32,5 +32,12 @@ cmp_ok(dd_is_nan(dd_inf(-1)), '==', 0, "-inf is not nan"          );
 cmp_ok(dd_is_nan(dd_nan())  , '!=', 0, "dd_nan() is recognized as nan");
 cmp_ok(dd_is_inf(dd_nan())  , '==', 0, "nan is not inf"               );
 
+my $x = Math::FakeDD->new(2.5);
+my $y = $x;
+
+$x *= 4;
+
+cmp_ok($y, '==', 2.5, 'the value of the copy is unaltered');
+cmp_ok($x, '==', 10, 'the original value is reset correctly');
 
 done_testing();
