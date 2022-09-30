@@ -57,4 +57,12 @@ $x_copy  = dd_copy ($y);
 cmp_ok($x_clone, '==', 10, 'dd_clone updated the value correctly');
 cmp_ok($x_copy,  '==', 10, 'dd_copy updated the value correctly');
 
+eval {dd_clone(Math::MPFR->new(1.23));};
+like($@, qr/^Arg given to dd_clone or dd_copy must be a Math::FakeDD object/,
+    'dd_clone rejects Math::MPFR object argument');
+
+eval {dd_copy(17);};
+like($@, qr/^Arg given to dd_clone or dd_copy must be a Math::FakeDD object/,
+     'dd_copy rejects plain perl scalar argument');
+
 done_testing();
