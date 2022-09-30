@@ -1,4 +1,4 @@
-# Run checks on dd_assign and overload_copy
+# Run checks on dd_assign, overload_copy, dd_copy and dd_clone
 use strict;
 use warnings;
 use Math::FakeDD qw(:all);
@@ -34,13 +34,27 @@ cmp_ok(dd_is_inf(dd_nan())  , '==', 0, "nan is not inf"               );
 
 my $x = Math::FakeDD->new(2.5);
 my $y = $x;
+my $x_clone = dd_clone($x);
+my $x_copy  = dd_copy ($x);
 
 $x *= 4;
 
 cmp_ok($y, '==', 2.5, 'the value of the copy is unaltered');
 cmp_ok($x, '==', 10, 'the original value is reset correctly');
 
+cmp_ok($x_clone, '==', 2.5, 'the value of the copy is unaltered');
+cmp_ok($x_copy,  '==', 2.5, 'the original value is reset correctly');
+
 $y = $x;
 cmp_ok($y, '==', 10, 'the copy is updated correctly');
+
+cmp_ok($x_clone, '==', 2.5, 'dd_clone returned a separate copy');
+cmp_ok($x_copy,  '==', 2.5, 'dd_copy returned a separate copy');
+
+$x_clone = dd_clone($y);
+$x_copy  = dd_copy ($y);
+
+cmp_ok($x_clone, '==', 10, 'dd_clone updated the value correctly');
+cmp_ok($x_copy,  '==', 10, 'dd_copy updated the value correctly');
 
 done_testing();
