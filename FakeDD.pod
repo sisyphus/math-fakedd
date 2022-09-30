@@ -77,6 +77,12 @@
 
    Assigns the value represented by $arg, to the Math::FakeDD object.
 
+  $obj2 = dd_clone($obj1);
+  $obj2 = dd_copy ($obj1);
+
+   Both dd_clone() and dd_copy() return a copy of the Math::FakeDD
+   object that was given to them. dd_clone is an alias for dd_copy.
+
 =head1 ARITHMETIC FUNCTIONS
 
   Use either the functions, or the overloaded
