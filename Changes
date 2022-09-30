@@ -4,7 +4,12 @@ Revision history for Perl module Math::FakeDD
  - Doc fix for FakeDD.pod -see https://github.com/sisyphus/math-fakedd/issues/1
    Thanks, Peter Acklam.
  - Add overload_copy() which overloads the assignment operator ('=')
+   Also add dd_copy() and dd_clone() - both of which return a copy of their
+   Math::FakeDD object argument.
    Thanks again, Peter Acklam.
+ - Have dd_repro() check that Math::MPFR is at version 4.24 or later. (This is done
+   in case Math::FakeDD is installed into a location where it becomes accessible to
+   a perl whose version of Math::MPFR is pre-4.24.)
 
 0.05
  - Extra test (for correct handling of trailing zeros) added to dd_repro_test()
