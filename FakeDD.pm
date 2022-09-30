@@ -9,9 +9,12 @@ use 5.022; # for $Config{longdblkind}
 
 use constant MPFR_LIB_VERSION   => MPFR_VERSION;
 
-use constant NAN_COMPARE_BUG    => $Math::MPFR::VERSION < 4.23 ? 1 : 0;
+use constant NAN_COMPARE_BUG    => $Math::MPFR::VERSION < 4.23  ? 1 : 0;
 
-use constant NV_IS_DOUBLE       => $Config{nvsize} == 8        ? 1 : 0;
+# The dd_repro() sub requires Math-MPFR-4.24
+use constant M_MPFR_VER_OK      => $Math::MPFR::VERSION >= 4.24 ? 1 : 0;
+
+use constant NV_IS_DOUBLE       => $Config{nvsize} == 8         ? 1 : 0;
 
 use constant NV_IS_DOUBLEDOUBLE => $Config{nvsize} != 8 &&
                                    ($Config{longdblkind} >=5 && $Config{longdblkind} <= 8) ? 1 : 0;
@@ -63,8 +66,8 @@ require Exporter;
 
 my @tags = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
-  dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_catalan dd_cmp dd_cos dd_dec dd_div dd_div_eq
-  dd_eq dd_euler dd_exp dd_exp2 dd_exp10
+  dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_catalan dd_cmp dd_clone dd_copy dd_cos dd_dec
+  dd_div dd_div_eq dd_eq dd_euler dd_exp dd_exp2 dd_exp10
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_log2 dd_log10 dd_lt dd_lte
   dd_mul dd_mul_eq dd_nan dd_neq dd_numify dd_pi dd_pow dd_pow_eq dd_repro dd_repro_test
   dd_sin dd_spaceship dd_sqrt dd_streq dd_stringify dd_strne
@@ -112,6 +115,11 @@ sub new {
 sub dd_repro {
   die "Arg given to dd_repro() must be a Math::FakeDD object"
     unless ref($_[0]) eq 'Math::FakeDD';
+
+  unless(M_MPFR_VER_OK) {
+    warn "dd_repro() needs Math-MPFR-4.24 or later, but you have only $Math::MPFR::VERSION\n";
+    die "Please update Math::MPFR if you wish to call dd_repro()";
+  }
 
   my $arg = shift;
   my $prec = 0;
@@ -693,6 +701,16 @@ sub dd_cmp {
 
   return $rop1 <=> $rop2; # "<=>" is "Math::MPFR::overload_spaceship"
                           # and will return undef if a NaN is involved.
+}
+
+*dd_clone = \&dd_copy;
+sub dd_copy {
+  die "Arg given to dd_clone or dd_copy must be a Math::FakeDD object"
+    unless ref($_[0]) eq 'Math::FakeDD';
+
+  my $ret = Math::FakeDD->new();
+  dd_assign($ret, $_[0]);
+  return $ret;
 }
 
 sub dd_cos {
