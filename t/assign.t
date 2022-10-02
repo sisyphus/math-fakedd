@@ -65,4 +65,22 @@ eval {dd_copy(17);};
 like($@, qr/^Arg given to dd_clone or dd_copy must be a Math::FakeDD object/,
      'dd_copy rejects plain perl scalar argument');
 
+$x = Math::FakeDD -> new("1.79769313486231580793728971405303e+308");
+
+cmp_ok(dd_is_inf($x)  , '!=', 0, "1.79769313486231580793728971405303e+308 is inf");
+
+cmp_ok($x, '==', mpfr2dd(dd2mpfr($x)), "1.79769313486231580793728971405303e+308 passes round trip");
+
+cmp_ok(dd_is_inf(mpfr2dd(mpfr2098('1.79769313486231580793728971405303e+308'))), '!=', 0,
+       "mpfr2dd(mpfr2098('1.79769313486231580793728971405303e+308')) ok");
+
+$x = Math::FakeDD -> new("-1.79769313486231580793728971405303e+308");
+
+cmp_ok($x, '==', dd_inf(-1), "-1.79769313486231580793728971405303e+308 is -inf");
+
+cmp_ok($x, '==', mpfr2dd(dd2mpfr($x)), "-1.79769313486231580793728971405303e+308 passes round trip");
+
+cmp_ok(mpfr2dd(mpfr2098('-1.79769313486231580793728971405303e+308')), '==', dd_inf(-1),
+       "mpfr2dd(mpfr2098('-1.79769313486231580793728971405303e+308')) ok");
+
 done_testing();
