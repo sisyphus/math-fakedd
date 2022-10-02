@@ -26,6 +26,9 @@ use constant NV_IS_QUAD => $Config{nvtype} eq '__float128' ||
 use constant NV_IS_80BIT_LD => $Config{nvtype} eq 'long double' &&
                                $Config{longdblkind} > 2 && $Config{longdblkind} < 5         ? 1 : 0;
 
+use constant M_FDD_DBL_MAX  => Rmpfr_get_d(Math::MPFR->new('1.fffffffffffffp+1023', 16), 0);
+use constant M_FDD_P2_970   => 2 ** 970;
+
 use overload
 'abs'   => \&dd_abs,
 'atan2' => \&dd_atan2,
@@ -1449,6 +1452,15 @@ sub mpfr2dd {
   }
   Rmpfr_sub_d($mpfr, $mpfr, $msd, MPFR_RNDN);
   my $lsd = Rmpfr_get_d($mpfr, MPFR_RNDN);
+
+  # If abs($msd) is DBL_MAX && abs($lsd) is 2**970
+  # && $msd has the same sign as $lsd, then return
+  # an Inf that has the same sign as $msd
+  if(abs($msd) == M_FDD_DBL_MAX && abs($lsd) == M_FDD_P2_970) {
+    if($msd < 0 && $lsd < 0) { return dd_inf(-1) }
+    if($msd > 0 && $lsd > 0) { return dd_inf()   }
+  }
+
   $h{msd} = $msd;
   $h{lsd} = $lsd;
   return bless(\%h);
