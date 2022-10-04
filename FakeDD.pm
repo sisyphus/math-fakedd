@@ -62,6 +62,8 @@ use overload
 '-='    => \&dd_sub_eq,
 '!'     => \&dd_false,
 '='     => \&overload_copy,
+'++'    => \&overload_inc,
+'--'    => \&overload_dec,
 ;
 
 require Exporter;
@@ -1529,6 +1531,20 @@ sub overload_copy {
   return $ret;
 }
 
+sub overload_inc {
+  # Not exported
+  my $rop1 = dd2mpfr($_[0]);
+  Rmpfr_add_ui($rop1, $rop1, 1, MPFR_RNDN);
+  dd_assign($_[0], mpfr2dd($rop1));
+}
+
+sub overload_dec {
+  # Not exported
+  my $rop1 = dd2mpfr($_[0]);
+  Rmpfr_sub_ui($rop1, $rop1, 1, MPFR_RNDN);
+  dd_assign($_[0], mpfr2dd($rop1));
+}
+
 sub oload {
   # Not exported.
   # Return a list of the operator-function pairs for the overloaded
@@ -1567,6 +1583,8 @@ sub oload {
     '-='    => 'dd_sub_eq',
     '!'     => 'dd_false',
     '='     => 'overload_copy',
+    '++'    => 'overload_inc',
+    '--'    => 'overload_dec',
 );
 
   return %h
