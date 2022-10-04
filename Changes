@@ -15,6 +15,7 @@ Revision history for Perl module Math::FakeDD
    (DBL_MAX is 0x1.fffffffffffffp+1023, which is the largest possible finite double.)
    Add checks for this to t/assign.t and t/add.t.
    Thanks, Peter Acklam.
+ - Add overloading of '++' and '--'.
 
 0.05
  - Extra test (for correct handling of trailing zeros) added to dd_repro_test()
