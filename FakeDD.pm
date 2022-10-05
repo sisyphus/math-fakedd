@@ -28,6 +28,7 @@ use constant NV_IS_80BIT_LD => $Config{nvtype} eq 'long double' &&
 
 use constant M_FDD_DBL_MAX  => Rmpfr_get_d(Math::MPFR->new('1.fffffffffffffp+1023', 16), 0);
 use constant M_FDD_P2_970   => 2 ** 970;
+use constant DBL_DENORM_MIN => 2 ** -1074;
 
 use overload
 'abs'   => \&dd_abs,
@@ -74,7 +75,8 @@ my @tags = qw(
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_catalan dd_cmp dd_clone dd_copy dd_cos dd_dec
   dd_div dd_div_eq dd_eq dd_euler dd_exp dd_exp2 dd_exp10
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_log2 dd_log10 dd_lt dd_lte
-  dd_mul dd_mul_eq dd_nan dd_neq dd_numify dd_pi dd_pow dd_pow_eq dd_repro dd_repro_test
+  dd_mul dd_mul_eq dd_nan dd_neq
+  dd_nextup dd_nextdown dd_numify dd_pi dd_pow dd_pow_eq dd_repro dd_repro_test
   dd_sin dd_spaceship dd_sqrt dd_streq dd_stringify dd_strne
   dd_sub dd_sub_eq
   dd2mpfr mpfr2dd mpfr_any_prec2dd mpfr2098
@@ -95,6 +97,10 @@ $Math::FakeDD::VERSION =  '0.06';
 # that dd_repro() has not been called at all.
 
 $Math::FakeDD::REPRO_PREC = -1;
+$Math::FakeDD::DD_MAX = Math::FakeDD->new(Rmpfr_get_d(Math::MPFR->new('1.fffffffffffffp+1023', 16), MPFR_RNDN))
+                        + Rmpfr_get_d(Math::MPFR->new('1.fffffffffffffp+969', 16), MPFR_RNDN);
+
+
 
 sub new {
 
@@ -1670,5 +1676,61 @@ sub unpackx {
 #  return 1;                      # pass
 #}
 
+sub dd_nextup {
+  my $dd = shift;
+  return Math::FakeDD->new(2 ** -1074) if $dd == 0;
+  return dd_nan() if dd_is_nan($dd);
+  if(dd_is_inf($dd)) {
+    return dd_inf() if $dd > 0;
+    return -$Math::FakeDD::DD_MAX;
+  }
+
+  return $dd + DBL_DENORM_MIN if $dd->{lsd} == 0;
+
+  # We now need to check the first 12 bits of the lsd
+  my $raw_exponent = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3)) & 2047;
+  unless($raw_exponent) {
+    # Can't be a zero because this sub would have returned earlier
+    # And the lsd can never be an inf or a nan
+    # Therefore must be a subnormal - so we return $dd plus DBL_DENORM_MIN
+    return $dd + DBL_DENORM_MIN;
+  }
+
+  return $dd + (2 ** ($raw_exponent - 1023 - 52)); # return $dd + 1ULP.
+}
+
+sub dd_nextdown {
+  my $dd = shift;
+  return Math::FakeDD->new(-(2 ** -1074)) if $dd == 0;
+  return dd_nan() if dd_is_nan($dd);
+  if(dd_is_inf($dd)) {
+    return dd_inf(-1) if $dd < 0;
+    return $Math::FakeDD::DD_MAX;
+  }
+
+  return $dd - DBL_DENORM_MIN if $dd->{lsd} == 0;
+
+  # We now need to check the first 12 bits of the lsd
+  my $raw_exponent = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3)) & 2047;
+  unless($raw_exponent) {
+    # Can't be a zero because this sub would have returned earlier
+    # And the lsd can never be an inf or a nan
+    # Therefore must be a subnormal - so we return $dd minus DBL_DENORM_MIN
+    return $dd - DBL_DENORM_MIN;
+  }
+
+  return $dd - (2 ** ($raw_exponent - 1023 - 52)); # return $dd - 1ULP.
+}
+
+sub _ulp_exponent {
+  # Not exported, may not do what you want for Inf/NaN arguments
+  my $dd = shift;
+  #die "_ulp_exponent() is intended to be used only with finite non-zero doubledoubles"
+  #  if(dd_is_nan($dd) || dd_is_inf($dd) || $dd == 0);
+
+  my $exp = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3)) & 2047;
+  return $exp - 1075 if $exp;
+  return -1074;
+}
 
 1;
