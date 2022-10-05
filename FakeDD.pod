@@ -370,7 +370,7 @@
   $obj = mpfr2dd         ($mpfr); # Precision of $mpfr is 2098 bits.
   $obj = mpfr_any_prec2dd($mpfr); # Precision of $mpfr is unrestricted.
 
-   Return the value held by the 2 Math::MPFR object $mpfr as the
+   Return the value held by the Math::MPFR object $mpfr as the
    Math::FakeDD object $obj.
    Precision can be (and often is) lost in this conversion.
 
@@ -388,6 +388,17 @@
    a perl floating point (NV) - but not a Math::FakeDD object.
    To convert a Math::FakeDD object to a 2098-bit precision Math::MPFR
    object, use dd2mpfr() instead.
+
+  $obj2 = dd_nextup($obj1);
+  $obj2 = dd_nextdown($obj1);
+
+   Return the value that is greater than, or (respectively) less than,
+   the given argument by the smallest amount possible.
+   Return dd_nan() if $obj1 is NaN.
+   If $obj1 is +Inf, dd_nextup() returns dd_inf(), dd_nextdown() returns
+   $Math::FakeDD::DD_MAX.
+   If $obj1 is -Inf, dd_nextup() returns -$Math::FakeDD::DD_MAX and
+   dd_nextdown() returns dd_inf(-1).
 
 
 =head1 ARITHMETIC IMPLEMENTATION
