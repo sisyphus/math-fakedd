@@ -16,6 +16,7 @@ Revision history for Perl module Math::FakeDD
    Add checks for this to t/assign.t and t/add.t.
    Thanks, Peter Acklam.
  - Add overloading of '++' and '--'.
+ - Add dd_nextup() and dd_nextdown().
 
 0.05
  - Extra test (for correct handling of trailing zeros) added to dd_repro_test()
