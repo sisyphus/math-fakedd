@@ -1321,6 +1321,8 @@ sub dd_stringify {
   return "[" . nvtoa($self->{msd}) . " " . nvtoa($self->{lsd}) . "]"
     if NV_IS_DOUBLE;
 
+  return "[0.0 0.0]" if($self->{msd} == 0 && $self->{lsd} == 0); # Don't look at the exponent of a
+                                                                 # Math::MPFR object whose value is 0.
   my($mpfrm, $mpfrl) = (Rmpfr_init2(53), Rmpfr_init2(53));
   Rmpfr_set_d($mpfrm, $self->{msd}, MPFR_RNDN);
   Rmpfr_set_d($mpfrl, $self->{lsd}, MPFR_RNDN);
@@ -1451,7 +1453,6 @@ sub mpfr2dd {
 
   my $mpfr = Rmpfr_init2(2098);
   Rmpfr_set($mpfr, shift, MPFR_RNDN);
-
   my $msd = Rmpfr_get_d($mpfr, MPFR_RNDN);
   if($msd == 0 || $msd != $msd || $msd / $msd != 1) { # $msd is zero, nan, or inf.
     $h{msd} = $msd;
