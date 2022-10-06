@@ -5,7 +5,22 @@ use Config;
 
 use constant CHECK1 => $Config{ivsize} >= 8 ? 1 : 0;
 
+# If perl's nvtype is the extended precision (80 bit) long double, then
+# CHECK2 is set to 0. Otherwise it's set to 1. The 80 bit long double is
+# different from the other 2 nvtypes in that its "%a" formatting does not
+# begin with "0x1."
+# I might accommodate in the tests at some point in the future.
+use constant CHECK2 => Math::FakeDD::NV_IS_DOUBLE | Math::FakeDD::NV_IS_QUAD;
+
 use Test::More;
+
+my $explanation = '';
+unless(CHECK2) {
+  $explanation = " (because NVTYPE is 80-bit long double)";
+}
+unless(CHECK1) {
+  $explanation = " (because IVSIZE is 4)";
+}
 
 *ulp_exp = \&Math::FakeDD::_ulp_exponent;
 my $nan  = dd_nan();   # nan
@@ -209,6 +224,16 @@ for(1 .. 100) {
   my $nd = dd_nextdown($dd);
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
 
+  if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
+    my $cmp_lsd  = ok_to_compare($dd, $nu);
+    if($cmp_lsd) {
+      $sanity_checks += 2;
+      cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
+      # We should also be able to do the same check with $nd.
+      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+    }
+  }
+
   $dd1 *= -1;
 
   $dd  = $dd1 + $dd2;
@@ -216,6 +241,16 @@ for(1 .. 100) {
   cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+
+  if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
+    my $cmp_lsd  = ok_to_compare($dd, $nu);
+    if($cmp_lsd) {
+      $sanity_checks += 2;
+      cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
+      # We should also be able to do the same check with $nd.
+      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+    }
+  }
 
   $dd2 *= -1;
 
@@ -225,6 +260,16 @@ for(1 .. 100) {
   $nd = dd_nextdown($dd);
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
 
+  if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
+    my $cmp_lsd  = ok_to_compare($dd, $nu);
+    if($cmp_lsd) {
+      $sanity_checks += 2;
+      cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
+      # We should also be able to do the same check with $nd.
+      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+    }
+  }
+
   $dd1 *= -1;
 
   $dd  = $dd1 + $dd2;
@@ -232,6 +277,16 @@ for(1 .. 100) {
   cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+
+  if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
+    my $cmp_lsd  = ok_to_compare($dd, $nu);
+    if($cmp_lsd) {
+      $sanity_checks += 2;
+      cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
+      # We should also be able to do the same check with $nd.
+      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+    }
+  }
 }
 ###############################################################################################
 
@@ -270,9 +325,17 @@ for(1..200) {
   next if dd_is_inf($nd);
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
 
-  if(CHECK1) { # If IVSIZE is 8
-    # Where possible, establish likelihood that $dd & $nu
-    #  differ by 1 ulp and that $dd & $nd differ by 1 ulp
+   if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
+    # Where easily possible, establish that $dd & $nu
+    # differ by 1 ulp and that $dd & $nd differ by 1 ulp.
+    # We do this by converting the hex representations of
+    # the respective normal mantissas to hex integers and
+    # then checking that those integers differ by 1.
+    # For subnormal lsd's we need to add DBL_DENORM_MIN to
+    # the smaller value and check that it equals the larger
+    # value as larger minus smaller can be greater than
+    # 1 if we apply the same approach as is used with the
+    # normal values.
 
     my $cmp_lsd  = ok_to_compare($dd, $nu);
     if($cmp_lsd) {
@@ -290,7 +353,7 @@ for(1..200) {
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
 }
 
-warn "\n Ran $sanity_checks sanity checks\n";
+warn "\n Ran $sanity_checks sanity checks${explanation}.\n";
 
 #################
 done_testing(); #
@@ -302,9 +365,7 @@ sub ok_to_compare {
   my $d1 = $_[0]->{lsd};
   my $d2 = $_[1]->{lsd};
 
-  #my $raw_exp1 = hex(substr(unpack("H*", pack("d>", $d1)), 0, 3)) & 2047;
-  #my $raw_exp2 = hex(substr(unpack("H*", pack("d>", $d2)), 0, 3)) & 2047;
-  #return 0 if ($raw_exp1 == 0 || $raw_exp2 == 0);
+  return 0 if(sprintf("%a", $d1) =~ /0x1p/i || sprintf("%a", $d2) =~ /0x1p/i);
 
   # Check that they are different
   return 0 if $d1 == $d2;
@@ -312,6 +373,8 @@ sub ok_to_compare {
   # Check that they have the same sign
   return 0 if $d1 < 0 && $d2 > 0;
   return 0 if $d1 > 0 && $d2 < 0;
+
+  #
 
   # Check that they have the same exponent.
   return 0 if(split /p/i, sprintf("%a", $d1))[1]
@@ -361,16 +424,8 @@ sub sanity_check {
   $h2 = hex($h2);
   my $diff = $h1 > $h2 ? $h1 - $h2 : $h2 - $h1;
   return 1 if $diff == 1;
-  print "HEX $h1 $h2\n";
+  warn "VALS COMPARED: $h1 $h2\n";
   return 0;
 }
 
 __END__
-[0x1.ffffffffffffdp-1009 -0x1.8p-1063]
-[0x1.cp-974 -0x1.ep-1028]
-[0x1.fffffffffffffp-999 -0x1.8p-1054]
-[0x1.ffffffffffffcp-1001 0x1p-1056]
-[0x1p-1005 -0x1.8p-1060]
-[0x1.fffffffffffffp-967 -0x1.8000000000004p-1023]
-[0x1p-975 -0x1.cp-1031]
-[0x1.ffffffffffffcp-1018 0x1.8p-1072]
