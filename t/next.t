@@ -14,6 +14,7 @@ use constant CHECK2 => Math::FakeDD::NV_IS_DOUBLE | Math::FakeDD::NV_IS_QUAD;
 
 use Test::More;
 
+my $expected_exponent;
 my $explanation = '';
 unless(CHECK2) {
   $explanation = " (because NVTYPE is 80-bit long double)";
@@ -22,7 +23,6 @@ unless(CHECK1) {
   $explanation = " (because IVSIZE is 4)";
 }
 
-*ulp_exp = \&Math::FakeDD::_ulp_exponent;
 my $nan  = dd_nan();   # nan
 my $pinf = dd_inf();   # +ve inf
 my $ninf = dd_inf(-1); # -ve inf
@@ -31,15 +31,22 @@ my $nzero = $pzero * -1;
 my $dd_denorm_min = Math::FakeDD->new(Math::FakeDD::DBL_DENORM_MIN);
 my $sanity_checks = 0;
 
-# Not sure if/how/why/when/where the values returned by
-# _ulp_exponent() for Inf/NaN/Zero will matter, but let's
-# check that they don't change from what I'm seeing:
+cmp_ok(ulp_exponent($pinf),  '==', -1074, "ulp_exponent(inf)  returns -1074");
+cmp_ok(ulp_exponent($ninf),  '==', -1074, "ulp_exponent(-inf) returns -1074");
+cmp_ok(ulp_exponent($nan),   '==', -1074, "ulp_exponent(nan)  returns -1074");
+cmp_ok(ulp_exponent($pzero), '==', -1074, "ulp_exponent(0)    returns -1074");
+cmp_ok(ulp_exponent($nzero), '==', -1074, "ulp_exponent(-0)   returns -1074");
 
-cmp_ok(ulp_exp($pinf),  '==', -1074, "_ulp_exponent(inf)  returns -1074");
-cmp_ok(ulp_exp($ninf),  '==', -1074, "_ulp_exponent(-inf) returns -1074");
-cmp_ok(ulp_exp($nan),   '==', -1074, "_ulp_exponent(nan)  returns -1074");
-cmp_ok(ulp_exp($pzero), '==', -1074, "_ulp_exponent(0)    returns -1074");
-cmp_ok(ulp_exp($nzero), '==', -1074, "_ulp_exponent(-0)   returns -1074");
+# Run some checks on is_subnormal()
+cmp_ok(is_subnormal($pinf->{msd}),  '==', 0, "is_subnormal(inf)  returns 0");
+cmp_ok(is_subnormal($ninf->{msd}),  '==', 0, "is_subnormal(-inf) returns 0");
+cmp_ok(is_subnormal($nan->{msd}),   '==', 0, "is_subnormal(nan)  returns 0");
+cmp_ok(is_subnormal($pzero->{msd}), '==', 1, "is_subnormal(0)    returns 1");
+cmp_ok(is_subnormal($nzero->{msd}), '==', 1, "is_subnormal(-0)   returns 1");
+cmp_ok(is_subnormal(2**-1022), '==', 0, "is_subnormal(2**-1022) returns 0");
+cmp_ok(is_subnormal(2**-1023), '==', 1, "is_subnormal(2**-1023) returns 1");
+cmp_ok(is_subnormal(2**-1022 + 2**-1023), '==', 0, "is_subnormal(2**-1022 + 2**-1023) returns 0");
+cmp_ok(is_subnormal(2**-1022 - 2**-1074), '==', 1, "is_subnormal(2**-1022 - 2**-1074) returns 1");
 
 my $nu = dd_nextup($nan);
 cmp_ok(dd_is_nan($nu), '!=', 0, "nextup from NaN is NaN");
@@ -73,6 +80,11 @@ cmp_ok($nu, '==', Math::FakeDD::DBL_DENORM_MIN, "nextup from -0 is $dd_denorm_mi
 $nd = dd_nextdown($nzero);
 cmp_ok($nd, '==', -Math::FakeDD::DBL_DENORM_MIN, "nextdown from +0 is " . -$dd_denorm_min);
 
+my $dd_norm_min = Math::FakeDD->new(2 ** -1022);
+my $dd_subnorm_max = dd_nextdown($dd_norm_min);
+cmp_ok(is_subnormal($dd_subnorm_max->{msd}), '==', 1, "nextdown from 2**-1022 is subnormal");
+cmp_ok(dd_nextup($dd_subnorm_max), '==', $dd_norm_min, "nextup from max subnormal is normal");
+
 ###############################################################################################
 my $dd = Math::FakeDD->new(2 ** -1022) + (2 ** -1074);
 # [2.225073858507202e-308 0.0]
@@ -82,14 +94,22 @@ $nu = dd_nextup($dd);
 
 cmp_ok($nu, '==', Math::FakeDD->new(2 **-1022) + (2 ** -1073),
                  "dd_nextup(2 ** -1022) + (2 ** -1074)) == (2 ** -1022) + (2 ** -1073)");
-cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
 
 $nd = dd_nextdown($dd);
 # [2.2250738585072014e-308 0.0]
 
 cmp_ok($nd, '==', Math::FakeDD->new(2 **-1022),
                  "dd_nextdown(2 ** -1022) + (2 ** -1074)) == (2 ** -1022)");
-cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+if(should_not_fail($dd)) {
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+}
+else {
+  warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+}
 
 $dd = Math::FakeDD->new(-(2 ** -1022)) - (2 ** -1074);
 # [-2.225073858507202e-308 0.0]
@@ -99,14 +119,22 @@ $nu = dd_nextup($dd);
 
 cmp_ok($nu, '==', Math::FakeDD->new(-(2 **-1022)),
                  "dd_nextup(-(2 ** -1022)) - (2 ** -1074)) == -(2 ** -1022)");
-cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
 
 $nd = dd_nextdown($dd);
 # [-2.2250738585072024e-308 0.0]
 
 cmp_ok($nd, '==', Math::FakeDD->new(-(2 **-1022)) - (2 ** -1073),
                  "dd_nextdown(-(2 ** -1022)) - (2 ** -1074)) == -(2 ** -1022) - (2 ** -1073)");
-cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+if(should_not_fail($dd)) {
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+}
+else {
+  warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+}
 ###############################################################################################
 ###############################################################################################
 $dd = Math::FakeDD->new(2 ** -1000) + (2 ** -1052);
@@ -117,14 +145,22 @@ $nu = dd_nextup($dd);
 
 cmp_ok($nu, '==', Math::FakeDD->new(2 **-1000) + (2 ** -1052) + Math::FakeDD::DBL_DENORM_MIN,
                  "dd_nextup(2 ** -1000) + (2 ** -1052)) == (2 ** -1000) + (2 ** -1052) + (2 ** -1074)");
-cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
 
 $nd = dd_nextdown($dd);
 # [9.33263618503219e-302 -5e-324]
 
 cmp_ok($nd, '==', Math::FakeDD->new(2 **-1000) + (2 ** -1052) - Math::FakeDD::DBL_DENORM_MIN,
                  "dd_nextdown(2 ** -1000) + (2 ** -1052)) == (2 ** -1000) + (2 ** -1052) -(2 ** -1074)");
-cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+if(should_not_fail($dd)) {
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+}
+else {
+  warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+}
 
 $dd = Math::FakeDD->new(-(2 ** -1000)) - (2 ** -1052);
 # [-9.33263618503219e-302 0.0]
@@ -134,14 +170,22 @@ $nu = dd_nextup($dd);
 
 cmp_ok($nu, '==', Math::FakeDD->new(-(2 **-1000)) - (2 ** -1052) + Math::FakeDD::DBL_DENORM_MIN,
                  "dd_nextup(-(2 ** -1000)) - (2 ** -1052)) == -(2 ** -1000) -(2 ** -1052) + (2 ** -1074)");
-cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
 
 $nd = dd_nextdown($dd);
 # [-9.33263618503219e-302 -5e-324]
 
 cmp_ok($nd, '==', Math::FakeDD->new(-(2 **-1000)) - (2 ** -1052)  - Math::FakeDD::DBL_DENORM_MIN,
                  "dd_nextdown(-(2 ** -1000)) - (2 ** -1052)) == -(2 ** -1000) - (2 ** -1052) -(2 ** -1074)");
-cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+if(should_not_fail($dd)) {
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+}
+else {
+  warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+}
 ###############################################################################################
 
 for(1 .. 100) {
@@ -156,11 +200,19 @@ for(1 .. 100) {
   $nu = dd_nextup($dd);
   cmp_ok($nu, '==', Math::FakeDD->new($first) + ($second) + Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextup(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) + (2 ** -1074)");
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
   cmp_ok($nd, '==', Math::FakeDD->new($first) + ($second) - Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 
   $first  *= -1;
 
@@ -168,11 +220,19 @@ for(1 .. 100) {
   $nu = dd_nextup($dd);
   cmp_ok($nu, '==', Math::FakeDD->new($first) + ($second) + Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextup(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) + (2 ** -1074)");
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
   cmp_ok($nd, '==', Math::FakeDD->new($first) + ($second) - Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 
   $second *= -1;
 
@@ -180,11 +240,20 @@ for(1 .. 100) {
   $nu = dd_nextup($dd);
   cmp_ok($nu, '==', Math::FakeDD->new($first) + ($second) + Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextup(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) + (2 ** -1074)");
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
+
   $nd = dd_nextdown($dd);
   cmp_ok($nd, '==', Math::FakeDD->new($first) + ($second) - Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 
   $first *= -1;
 
@@ -192,11 +261,19 @@ for(1 .. 100) {
   $nu = dd_nextup($dd);
   cmp_ok($nu, '==', Math::FakeDD->new($first) + ($second) + Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextup(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) + (2 ** -1074)");
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
   cmp_ok($nd, '==', Math::FakeDD->new($first) + ($second) - Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 
 }
 ###############################################################################################
@@ -220,17 +297,36 @@ for(1 .. 100) {
   my $dd  = $dd1 + $dd2;
 
   my $nu = dd_nextup($dd);
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
   my $nd = dd_nextdown($dd);
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($nd)), "$dd - $nd ok");  # ALTERED
 
-  if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
-    my $cmp_lsd  = ok_to_compare($dd, $nu);
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
+
+  if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double.
+    # Where possible, we establish that $dd & $nu differ by
+    # 1ULP and that $dd & $nd differ by 1ULP, by doing the
+    # the following:
+    # Convert the hex representations of the normal mantissas
+    # (ignoring the leading "(-)0x1.") to hex integers and
+    # then check that those integers differ by 1ULP.
+    # This check is applied only to those cases where it is valid.
+
+    my $cmp_lsd  = ok_to_compare($dd, $nu); # This is the sub (below) that determines
+                                            # whether this test can be run.
     if($cmp_lsd) {
       $sanity_checks += 2;
       cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
       # We should also be able to do the same check with $nd.
-      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      unless($cmp_lsd == 3) {
+        cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      }
     }
   }
 
@@ -238,9 +334,21 @@ for(1 .. 100) {
 
   $dd  = $dd1 + $dd2;
   $nu = dd_nextup($dd);
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  $expected_exponent = ulp_exponent($dd);
+  $expected_exponent-- if ($expected_exponent > -1074 && $dd->{lsd} < 0 && sprintf("%a",$dd->{lsd}) !~ /\./); # lsd < 0 && abs(lsd) is a power of 2
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** $expected_exponent), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  $expected_exponent = ulp_exponent($dd);
+  $expected_exponent-- if ($expected_exponent > -1074 && $dd->{lsd} > 0 && sprintf("%a",$dd->{lsd}) !~ /\./); # lsd > 0 && is a power of 2
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** $expected_exponent), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 
   if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
     my $cmp_lsd  = ok_to_compare($dd, $nu);
@@ -248,7 +356,9 @@ for(1 .. 100) {
       $sanity_checks += 2;
       cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
       # We should also be able to do the same check with $nd.
-      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      unless($cmp_lsd == 3) {
+        cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      }
     }
   }
 
@@ -256,9 +366,19 @@ for(1 .. 100) {
 
   $dd  = $dd1 + $dd2;
   $nu = dd_nextup($dd);
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  $expected_exponent = ulp_exponent($dd);
+  $expected_exponent-- if ($expected_exponent > -1074 && $dd->{lsd} < 0 && sprintf("%a",$dd->{lsd}) !~ /\./); # lsd < 0 && abs(lsd) is a power of 2
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** $expected_exponent), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 
   if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
     my $cmp_lsd  = ok_to_compare($dd, $nu);
@@ -266,7 +386,9 @@ for(1 .. 100) {
       $sanity_checks += 2;
       cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
       # We should also be able to do the same check with $nd.
-      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      unless($cmp_lsd == 3) {
+        cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      }
     }
   }
 
@@ -274,9 +396,21 @@ for(1 .. 100) {
 
   $dd  = $dd1 + $dd2;
   $nu = dd_nextup($dd);
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  $expected_exponent = ulp_exponent($dd);
+  $expected_exponent-- if ($expected_exponent > -1074 && $dd->{lsd} < 0 && sprintf("%a",$dd->{lsd}) !~ /\./); # lsd < 0 && abs(lsd) is a power of 2
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** $expected_exponent), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  $expected_exponent = ulp_exponent($dd);
+  $expected_exponent-- if ($expected_exponent > -1074 && $dd->{lsd} > 0 && sprintf("%a",$dd->{lsd}) !~ /\./); # lsd > 0 && is a power of 2.
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** $expected_exponent), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 
   if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
     my $cmp_lsd  = ok_to_compare($dd, $nu);
@@ -284,7 +418,9 @@ for(1 .. 100) {
       $sanity_checks += 2;
       cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
       # We should also be able to do the same check with $nd.
-      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      unless($cmp_lsd == 3) {
+        cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      }
     }
   }
 }
@@ -320,37 +456,48 @@ for(1..200) {
   next if dd_is_inf($dd);
   my $nu = dd_nextup($dd);
   next if dd_is_inf($nu);
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  $expected_exponent = ulp_exponent($dd);
+  $expected_exponent-- if ($expected_exponent > -1074 && $dd->{lsd} < 0 && sprintf("%a",$dd->{lsd}) !~ /\./); # lsd < 0 && abs(lsd) is a power of 2
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** $expected_exponent), "$nu - $dd ok");
   my $nd = dd_nextdown($dd);
   next if dd_is_inf($nd);
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 
    if(CHECK1 && CHECK2) { # If IVSIZE is 8 && NVTYPE is not the 80-bit extended precision long double
-    # Where easily possible, establish that $dd & $nu
-    # differ by 1 ulp and that $dd & $nd differ by 1 ulp.
-    # We do this by converting the hex representations of
-    # the respective normal mantissas to hex integers and
-    # then checking that those integers differ by 1.
-    # For subnormal lsd's we need to add DBL_DENORM_MIN to
-    # the smaller value and check that it equals the larger
-    # value as larger minus smaller can be greater than
-    # 1 if we apply the same approach as is used with the
-    # normal values.
-
     my $cmp_lsd  = ok_to_compare($dd, $nu);
     if($cmp_lsd) {
       $sanity_checks += 2;
       cmp_ok(sanity_check($dd, $nu), '==', 1, "UP: " . sprintx($dd) . " sanity check");
       # We should also be able to do the same check with $nd.
-      cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      unless($cmp_lsd == 3) {
+        cmp_ok(sanity_check($dd, $nd), '==', 1, "DN: " . sprintx($dd) . " sanity check");
+      }
     }
   }
 
   $dd *= -1;
   $nu = dd_nextup($dd);
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$nu - $dd ok");
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
   $nd = dd_nextdown($dd);
-  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exp($dd)), "$dd - $nd ok");
+  $expected_exponent = ulp_exponent($dd);
+  $expected_exponent-- if ($expected_exponent > -1074 && $dd->{lsd} > 0 && sprintf("%a",$dd->{lsd}) !~ /\./); # lsd > 0 && is a power of 2
+  cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** $expected_exponent), "$dd - $nd ok");
+
+  if(should_not_fail($dd)) {
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  }
+  else {
+    warn "Skipped up-down & down-up round trip tests: " .sprintx($dd);
+  }
 }
 
 warn "\n Ran $sanity_checks sanity checks${explanation}.\n";
@@ -365,8 +512,6 @@ sub ok_to_compare {
   my $d1 = $_[0]->{lsd};
   my $d2 = $_[1]->{lsd};
 
-  return 0 if(sprintf("%a", $d1) =~ /0x1p/i || sprintf("%a", $d2) =~ /0x1p/i);
-
   # Check that they are different
   return 0 if $d1 == $d2;
 
@@ -380,6 +525,13 @@ sub ok_to_compare {
   return 0 if(split /p/i, sprintf("%a", $d1))[1]
              ne
              (split /p/i, sprintf("%a", $d2))[1];
+
+  # Exclude testing of dd_nextdown if printf("%a", $d1) =~ /0x1p/i
+  if(sprintf("%a", $d1) =~ /0x1p/i) {
+    #warn  sprintx($_[0]), " ", sprintx($_[1]), "\n";
+    return 3;
+  }
+
   return 1;
 }
 
@@ -390,13 +542,16 @@ sub sanity_check {
   my $s1 = sprintf "%a", $_[0]->{lsd};
   my $s2 = sprintf "%a", $_[1]->{lsd};
 
+  $s1 =~ s/0x1p/0x1.0p/i;
+  $s2 =~ s/0x1p/0x1.0p/i;
+
   my $raw_exp1 = hex(substr(unpack("H*", pack("d>", $_[0]->{lsd})), 0, 3)) & 2047;
   my $raw_exp2 = hex(substr(unpack("H*", pack("d>", $_[1]->{lsd})), 0, 3)) & 2047;
 
   unless($raw_exp1 && $raw_exp2) {
-    # At least one of the values is subnormal,and 2**-1074 may have been
-    # rounded up. Therefore, we just go back to basics and check that the
-    # smaller of the 2 values plus 2 **-1074 equals the larger value.
+    # At least one of the values is subnormal (or zero) so we just
+    # go back to basics and check that the smaller of the 2 values
+    # plus 2 **-1074 equals the larger value.
 
     if($_[0]->{lsd} > $_[1]->{lsd}) {
       return 1 if $_[1]->{lsd} + Math::FakeDD::DBL_DENORM_MIN == $_[0]->{lsd};
@@ -428,4 +583,23 @@ sub sanity_check {
   return 0;
 }
 
+sub should_not_fail {
+  # TODO: remove the need for this check.
+  # The values detected here will probably fail
+  # the test : $dd == dd_nextup(dd_nextdown($dd))
+  # and/or
+  # the test: $dd == dd_nextdown(dd_nextup($dd))
+  # due to a quirk in the way such values of $dd
+  # are assigned.
+
+  my $dd = shift;
+  my $lsd_hex_str = sprintf("%a", $dd->{lsd});
+  if($lsd_hex_str =~ /1.fffffffffffff/i) { ####
+    my $ulp_exp_diff = ulp_exponent($dd, 1) - ulp_exponent($dd);
+    return 0 if $ulp_exp_diff == 54;
+  }
+  return 1;
+}
+
 __END__
+
