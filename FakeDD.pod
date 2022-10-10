@@ -72,10 +72,14 @@
 
    Returns a Math::FakeDD object with the value represented by $arg,
    or zero if no argument is provided.
+   $arg must be one of PV (string), IV (integer), UV (unsigned integer),
+   NV (perl floating point type) or Math::MPFR object.
 
   dd_assign($obj, $arg);
 
    Assigns the value represented by $arg, to the Math::FakeDD object.
+   $arg must be one of PV (string), IV (integer), UV (unsigned integer),
+   NV (perl floating point type) or Math::MPFR object.
 
   $obj2 = dd_clone($obj1);
   $obj2 = dd_copy ($obj1);
@@ -349,30 +353,32 @@
   $obj = dd_inf([$iv]); # $iv is an optional arg, which will be
                         # evaluated in (signed) numeric context
 
-    If the optional arg $iv, is less than 0 (in numeric context, then
-    a Math::FakeDD object with value -Inf is returned.
-    Else return a +Inf Math::FakeDD object.
+   If the optional arg $iv, is less than 0 (in numeric context, then
+   a Math::FakeDD object with value -Inf is returned.
+   Else return a +Inf Math::FakeDD object.
 
   $obj = dd_nan();
 
-    Return a NaN Math::FakeDD object.
+   Return a NaN Math::FakeDD object.
 
   $iv = dd_is_inf($obj);
 
-    Returns 1 if $obj is an infinity.
-    Else returns 0.
+   Returns 1 if $obj is an infinity.
+   Else returns 0.
 
   $iv = dd_is_nan($obj);
 
-    Returns 1 if $obj is a NaN.
-    Else returns 0.
+   Returns 1 if $obj is a NaN.
+   Else returns 0.
 
-  $obj = mpfr2dd         ($mpfr); # Precision of $mpfr is 2098 bits.
+  $obj = mpfr2dd($mpfr);          # Precision of $mpfr is 2098 bits.
   $obj = mpfr_any_prec2dd($mpfr); # Precision of $mpfr is unrestricted.
 
    Return the value held by the Math::MPFR object $mpfr as the
    Math::FakeDD object $obj.
-   Precision can be (and often is) lost in this conversion.
+   Precision can be (and often is) lost in this conversion if the
+   precision of $mpfr is greater than 107, or if $mpfr contains a
+   value outside of the double precision range.
 
   $mpfr = dd2mpfr($obj);
 
@@ -399,6 +405,23 @@
    $Math::FakeDD::DD_MAX.
    If $obj1 is -Inf, dd_nextup() returns -$Math::FakeDD::DD_MAX and
    dd_nextdown() returns dd_inf(-1).
+
+  $iv = ulp_exponent($obj, [$bool]);
+   If no second argument, return the signed integer value ($iv) such that
+   2**$iv equates to the value of ULP of the given argument's less
+   significant double.
+   If a second argument is given, and it evaluates to TRUE, then the value
+   of the ULP of the given argument's more sigfificant double is returned.
+   NOTE:
+     ULP is aka "unit in last place" or, synonymously, "unit of least
+     precision".
+
+  $iv = is_subnormal($double);
+   $double is evaluated to double precision.
+   If that value is subnormal (abs($double) < 2**-1022) return 1.
+   Else 0 is returned.
+   NOTE:
+     This function returns 1 if $double is zero.
 
 
 =head1 ARITHMETIC IMPLEMENTATION
