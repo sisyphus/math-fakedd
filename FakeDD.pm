@@ -81,6 +81,7 @@ my @tags = qw(
   dd_sub dd_sub_eq
   dd2mpfr mpfr2dd mpfr_any_prec2dd mpfr2098
   printx sprintx unpackx
+  ulp_exponent is_subnormal
 );
 
 @Math::FakeDD::EXPORT_OK = (@tags);
@@ -1454,17 +1455,24 @@ sub mpfr2dd {
   my $mpfr = Rmpfr_init2(2098);
   Rmpfr_set($mpfr, shift, MPFR_RNDN);
   my $msd = Rmpfr_get_d($mpfr, MPFR_RNDN);
+
+  # $msd could be an Inf or Zero, even though $mpfr was not.
+  # Also cater for the possibility that $msd is Nan - though
+  # I don't think that can happen.
   if($msd == 0 || $msd != $msd || $msd / $msd != 1) { # $msd is zero, nan, or inf.
     $h{msd} = $msd;
     $h{lsd} = 0;
     return bless(\%h);
   }
+
   Rmpfr_sub_d($mpfr, $mpfr, $msd, MPFR_RNDN);
   my $lsd = Rmpfr_get_d($mpfr, MPFR_RNDN);
 
   # If abs($msd) is DBL_MAX && abs($lsd) is 2**970
   # && $msd has the same sign as $lsd, then return
-  # an Inf that has the same sign as $msd
+  # an Inf that has the same sign as $msd.
+  # This is a bit murky. See:
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61399
   if(abs($msd) == M_FDD_DBL_MAX && abs($lsd) == M_FDD_P2_970) {
     if($msd < 0 && $lsd < 0) { return dd_inf(-1) }
     if($msd > 0 && $lsd > 0) { return dd_inf()   }
@@ -1686,18 +1694,26 @@ sub dd_nextup {
     return -$Math::FakeDD::DD_MAX;
   }
 
-  return $dd + DBL_DENORM_MIN if $dd->{lsd} == 0;
-
   # We now need to check the first 12 bits of the lsd
-  my $raw_exponent = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3)) & 2047;
+  my $is_neg = 0;
+  my $leading_12_bits = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3));
+  $is_neg = 1 if $leading_12_bits > 2048; # ignore signed zero
+  my $raw_exponent = $leading_12_bits & 2047;
   unless($raw_exponent) {
-    # Can't be a zero because this sub would have returned earlier
-    # And the lsd can never be an inf or a nan
-    # Therefore must be a subnormal - so we return $dd plus DBL_DENORM_MIN
+    # The lsd can never be an inf or a nan
+    # Therefore must be a subnormal (or zero),
+    # so we return $dd plus DBL_DENORM_MIN
     return $dd + DBL_DENORM_MIN;
   }
 
-  return $dd + (2 ** ($raw_exponent - 1023 - 52)); # return $dd + 1ULP.
+  my $exp = $raw_exponent - 1023 - 52;
+
+  # Decrement $exp if lsd is -ve && abs(lsd) is a power of 2.
+  $exp-- if $is_neg && sprintf("%a", $dd->{lsd}) !~ /\./;
+
+  my $ret = $dd + (2 ** $exp); # return $dd + 1ULP (or 0.5ULP if $exp was decremented).
+
+  return $ret;
 }
 
 sub dd_nextdown {
@@ -1709,29 +1725,50 @@ sub dd_nextdown {
     return $Math::FakeDD::DD_MAX;
   }
 
-  return $dd - DBL_DENORM_MIN if $dd->{lsd} == 0;
-
   # We now need to check the first 12 bits of the lsd
-  my $raw_exponent = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3)) & 2047;
+  my $is_neg = 0;
+  my $leading_12_bits = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3));
+  $is_neg = 1 if $leading_12_bits > 2048; # ignore signed zero
+  my $raw_exponent = $leading_12_bits & 2047;
   unless($raw_exponent) {
-    # Can't be a zero because this sub would have returned earlier
-    # And the lsd can never be an inf or a nan
-    # Therefore must be a subnormal - so we return $dd minus DBL_DENORM_MIN
+    # The lsd can never be an inf or a nan.
+    # Therefore must be a subnormal (or zero),
+    # so we return $dd minus DBL_DENORM_MIN
     return $dd - DBL_DENORM_MIN;
   }
 
-  return $dd - (2 ** ($raw_exponent - 1023 - 52)); # return $dd - 1ULP.
+  my $exp = $raw_exponent - 1023 - 52;
+
+  # Decrement $exp if lsd is +ve and is also a power of 2.
+  $exp-- if !$is_neg && sprintf("%a", $dd->{lsd}) !~ /\./;
+
+  my $ret = $dd - (2 ** $exp); # return $dd - 1ULP (or 0.5ULP if $exp was decremented).
+
+  return $ret;
 }
 
-sub _ulp_exponent {
-  # Not exported, may not do what you want for Inf/NaN arguments
+sub ulp_exponent {
   my $dd = shift;
-  #die "_ulp_exponent() is intended to be used only with finite non-zero doubledoubles"
-  #  if(dd_is_nan($dd) || dd_is_inf($dd) || $dd == 0);
-
-  my $exp = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3)) & 2047;
+  my $exp;
+  if($_[0]) {
+    # If a second (and true) argument was provided
+    $exp = hex(substr(unpack("H*", pack("d>", $dd->{msd})), 0, 3)) & 2047;
+  }
+  else {
+    $exp = hex(substr(unpack("H*", pack("d>", $dd->{lsd})), 0, 3)) & 2047;
+  }
   return $exp - 1075 if $exp;
   return -1074;
+}
+
+sub is_subnormal {
+  # Takes an NV as its argument.
+  my $d = shift;
+  die "Bad argument passed to is_subnormal()"
+    unless Math::MPFR::_itsa($d) == 3;
+  # NOTE:  # We return 1 if $d == 0.
+  return 1 if((hex(substr(unpack("H*", pack("d>", $d)), 0, 3)) & 2047) == 0);
+  return 0;
 }
 
 1;
