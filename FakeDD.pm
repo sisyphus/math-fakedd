@@ -80,7 +80,7 @@ my @tags = qw(
   dd_sin dd_spaceship dd_sqrt dd_streq dd_stringify dd_strne
   dd_sub dd_sub_eq
   dd2mpfr mpfr2dd mpfr_any_prec2dd mpfr2098
-  printx sprintx unpackx
+  printx sprintx any2dd unpackx
   ulp_exponent is_subnormal
 );
 
@@ -1661,6 +1661,15 @@ sub sprintx {
   die "Wrong arg given to sprintx()";
 }
 
+sub any2dd {
+  my $mpfr = Rmpfr_init2(2098);
+  Rmpfr_set_ui($mpfr, 0, MPFR_RNDN);
+  for(@_) {
+    $mpfr += $_;
+  }
+  return mpfr2dd($mpfr);
+}
+
 sub unpackx {
   if(ref($_[0]) eq 'Math::FakeDD') {
     my $self = shift;
@@ -1740,7 +1749,7 @@ sub dd_nextdown {
   my $exp = $raw_exponent - 1023 - 52;
 
   # Decrement $exp if lsd is +ve and is also a power of 2.
-  $exp-- if !$is_neg && sprintf("%a", $dd->{lsd}) !~ /\./;
+  $exp-- if !$is_neg && sprintf("%a", $dd->{lsd}) !~ /\./ && $exp > -1074;
 
   my $ret = $dd - (2 ** $exp); # return $dd - 1ULP (or 0.5ULP if $exp was decremented).
 
