@@ -73,7 +73,7 @@
    Returns a Math::FakeDD object with the value represented by $arg,
    or zero if no argument is provided.
    $arg must be one of PV (string), IV (integer), UV (unsigned integer),
-   NV (perl floating point type) or Math::MPFR object.
+   or NV (perl floating point type).
 
   dd_assign($obj, $arg);
 
@@ -86,6 +86,19 @@
 
    Both dd_clone() and dd_copy() return a copy of the Math::FakeDD
    object that was given to them. dd_clone is an alias for dd_copy.
+
+  $obj = any2dd(@args);
+
+   Converts all of the arguments to Math::FakeDD objects and returns
+   the sum of all of those objects.
+   Each argument must be one of PV (string), IV (integer), UV (unsigned
+   integer), NV (perl floating point type) or Math::MPFR object, but
+   they don't all have to be of the same type.
+   Strings beginning with (+/-) '0x' or '0X' will be evaluated as hex
+   values. This is handy for re-creating values that have been displayed
+   using (s)printx.
+   Strings begining with '(+/-) '0b' will be evaluated as base 2 values.
+
 
 =head1 ARITHMETIC FUNCTIONS
 
