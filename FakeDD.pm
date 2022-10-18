@@ -1716,13 +1716,22 @@ sub dd_nextup {
   }
 
   my $exp = $raw_exponent - 1023 - 52;
+  my $pow = 2 ** $exp;
 
-  # Decrement $exp if lsd is -ve && abs(lsd) is a power of 2.
-  $exp-- if $is_neg && sprintf("%a", $dd->{lsd}) !~ /\./;
+  # Check that $dd + $pow > $dd.
+  while($dd + $pow == $dd) {
+    $pow *= 2;
+  }
 
-  my $ret = $dd + (2 ** $exp); # return $dd + 1ULP (or 0.5ULP if $exp was decremented).
+  my $keep = $pow;
 
-  return $ret;
+  while($dd + $pow > $dd) {
+    $keep = $pow;
+    die "Error (bug) in dd_nextup(" . sprintx($dd) . ")" unless $keep;
+    $pow /= 2;
+  }
+
+return $dd + $keep;
 }
 
 sub dd_nextdown {
@@ -1747,13 +1756,22 @@ sub dd_nextdown {
   }
 
   my $exp = $raw_exponent - 1023 - 52;
+  my $pow = 2 ** $exp;
 
-  # Decrement $exp if lsd is +ve and is also a power of 2.
-  $exp-- if !$is_neg && sprintf("%a", $dd->{lsd}) !~ /\./ && $exp > -1074;
+  # Check that $dd - $pow < $dd.
+  while($dd - $pow == $dd) {
+    $pow *= 2;
+  }
 
-  my $ret = $dd - (2 ** $exp); # return $dd - 1ULP (or 0.5ULP if $exp was decremented).
+  my $keep = $pow;
 
-  return $ret;
+  while($dd - $pow < $dd) {
+    $keep = $pow;
+    die "Error (bug) in dd_nextup(" . sprintx($dd) . ")" unless $keep;
+    $pow /= 2;
+  }
+
+return $dd - $keep;
 }
 
 sub ulp_exponent {
