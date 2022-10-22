@@ -1,5 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
+0.08
+
 0.07
  - Bug fix for https://rt.cpan.org/Public/Bug/Display.html?id=144891
 
