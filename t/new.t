@@ -19,8 +19,24 @@ my $obj = Math::FakeDD->new();
 cmp_ok($obj->{msd}, '==', 0, "msd == 0");
 cmp_ok($obj->{lsd}, '==', 0, "lsd == 0");
 
-cmp_ok(Math::MPFR::_itsa($obj->{msd}), '==', 2, "msd is IV");
-cmp_ok(Math::MPFR::_itsa($obj->{lsd}), '==', 2, "lsd is IV");
+cmp_ok(Math::MPFR::_itsa($obj->{msd}), '==', 3, "msd is NV");
+cmp_ok(Math::MPFR::_itsa($obj->{lsd}), '==', 3, "lsd is NV");
+
+$obj = Math::FakeDD->new(0);
+
+cmp_ok($obj->{msd}, '==', 0, "msd == 0");
+cmp_ok($obj->{lsd}, '==', 0, "lsd == 0");
+
+cmp_ok(Math::MPFR::_itsa($obj->{msd}), '==', 3, "msd is NV");
+cmp_ok(Math::MPFR::_itsa($obj->{lsd}), '==', 3, "lsd is NV");
+
+my $obj1 = Math::FakeDD->new(11234);
+
+cmp_ok($obj1->{msd}, '==', 11234, "msd == 11234");
+cmp_ok($obj1->{lsd}, '==', 0, "lsd == 0");
+
+cmp_ok(Math::MPFR::_itsa($obj1->{msd}), '==', 3, "msd is again NV");
+cmp_ok(Math::MPFR::_itsa($obj1->{lsd}), '==', 3, "lsd is again NV");
 
 my $obj2 = Math::FakeDD::new('1.3');
 
