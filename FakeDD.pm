@@ -88,7 +88,7 @@ my @tags = qw(
 
 %Math::FakeDD::EXPORT_TAGS = (all => [@tags]);
 
-$Math::FakeDD::VERSION =  '0.08';
+$Math::FakeDD::VERSION =  '0.09';
 
 # Whenever dd_repro($obj) returns its string representation of
 # the value of $obj, $Math::FakeDD::REPRO_PREC is set to the
