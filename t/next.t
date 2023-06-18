@@ -161,10 +161,20 @@ for(1 .. 100) {
   my $second = 2 ** $p2;
 
   $dd = Math::FakeDD->new($first) + $second;
+
+  if(dd_is_inf($dd)) {
+     # AFAICT, this will happen only when int(rand(1024)) returns
+     # 1023 && int(rand(52) returns 0. But this has happened:
+     # http://www.cpantesters.org/cpan/report/797cfc22-6cfd-1014-a069-bac4e3396204
+
+     cmp_ok(dd_nextup($dd), '==', dd_inf(), "nextup(inf) is inf");
+     next; # remaining tests don't cater for Inf.
+  }
+
   $nu = dd_nextup($dd);
   cmp_ok($nu, '==', Math::FakeDD->new($first) + ($second) + Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextup(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) + (2 ** -1074)");
-  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");
+  cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");  ## line 167
   $nd = dd_nextdown($dd);
   cmp_ok($nd, '==', Math::FakeDD->new($first) + ($second) - Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
