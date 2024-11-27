@@ -186,8 +186,8 @@ sub dd_repro {
     $Math::FakeDD::REPRO_PREC = $prec;
     # Provide 2nd arg of 728 to mpfrtoa().
     # 2 ** -348 (prec = 727) needs this.
-    return '-' . mpfrtoa($mpfr, 728) if $neg;
-    return mpfrtoa($mpfr, 728);
+    return '-' . mpfrtoa($mpfr, 728) if $neg;     # 2nd arg needed
+    return mpfrtoa($mpfr, 728);                   # 2nd arg needed
 
   } # close $arg->{lsd} == 0
 
@@ -245,7 +245,7 @@ sub dd_repro {
   Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
 
   if($different_signs) {
-    my $candidate = mpfrtoa($mpfr, 53);
+    my $candidate = mpfrtoa($mpfr, 53);        # 2nd arg (53) not needed ??
 
     # Might fail either the "chop" test or
     # the "round trip" test, but not both.
@@ -269,8 +269,8 @@ sub dd_repro {
       $prec++;
       Rmpfr_prec_round($mpfr_orig, $prec, MPFR_RNDN);
       $Math::FakeDD::REPRO_PREC = $prec;
-      return '-' . mpfrtoa($mpfr_orig, 53) if $neg;
-      return mpfrtoa($mpfr_orig, 53);
+      return '-' . mpfrtoa($mpfr_orig, 53) if $neg;       # 2nd arg (53) not needed ??
+      return mpfrtoa($mpfr_orig, 53);                     # 2nd arg (53) not needed ??
     }
 
     my $ret = _chop_test($candidate, $arg, 0);
@@ -295,7 +295,7 @@ sub dd_repro {
   # We need to detect the (rare) case that a chopped and
   # then incremented mantissa passes the round trip.
 
-  my $can = mpfrtoa($mpfr, 53);
+  my $can = mpfrtoa($mpfr, 53);             # 2nd arg (53) not needed ??
   my $ret = _chop_test($can, $arg, 1);
 
   if($ret eq 'ok') {
@@ -1344,7 +1344,7 @@ sub dd_stringify {
     my $expl = Rmpfr_get_exp($mpfrl);
     if($expl < -1021) { Rmpfr_prec_round($mpfrl, 1074 + $expl, MPFR_RNDN) } # lsd is subnormal
   }
-  return "[" . mpfrtoa($mpfrm, 53) . " " . mpfrtoa($mpfrl, 53) . "]";
+  return "[" . mpfrtoa($mpfrm, 53) . " " . mpfrtoa($mpfrl, 53) . "]";    # 2nd args to mpfrtoa() needed
 }
 
 sub dd_sub {
