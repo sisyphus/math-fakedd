@@ -22,4 +22,5 @@ t/sparse.t
 t/sqrt.t
 t/stringify.t
 t/sub.t
+t/test_check.t
 t/validate.t

@@ -152,8 +152,14 @@ sub dd_repro {
   }
 
   if(NV_IS_DOUBLEDOUBLE) {
+    # A correction was made here in Math-FakeDD-0.09.
+    # However, it relies on nvtoa() being correct, and
+    # I don't have a machine on which I can verfiy that.
+    # (The replaced code also relied on correctness of nvtoa.)
     $Math::FakeDD::REPRO_PREC = undef; # nvtoa() doesn't tell us the precision.
-    return nvtoa($arg->{msd} + $arg->{lsd});
+    my $ret = dd2mpfr($arg->{msd});
+    Rmpfr_add($ret, $ret, dd2mpfr($arg->{lsd}), MPFR_RNDN);
+    return nvtoa(dd2mpfr(Rmpfr_get_NV($ret, MPFR_RNDN)));
   }
 
   my $neg = 0;
@@ -418,24 +424,49 @@ sub dd_repro_test {
   my ($repro, $op) = (shift, shift);
   my $ret = 0;
 
-  my $debug = defined $_[0] ? $_[0] : 0;
-  $debug = $debug =~ /debug/i ? 1 : 0;
+  my($debug, $examine) = (0, 0);
+
+  if(defined $_[0]) {
+    die "Too many args passed to dd_repro_test()"
+      if @_ > 2;
+
+    for(@_) {
+      $debug   = 1 if $_ =~ /debug/i;
+      $examine = 1 if $_ =~ /examine/i;
+    }
+  }
 
   print "OP: $op\nREPRO: $repro\n" if $debug;
+  $Math::FakeDD::examine{repro} = $repro if $examine;
 
   # Handle Infs, Nan, and Zero.
   if(dd_is_nan($op)) {
+    if($examine) {
+      # Clear unset %Math::FakeDD::examine keys
+      $Math::FakeDD::examine{chop} = '';
+      $Math::FakeDD::examine{inc}  = '';
+    }
     return 15 if $repro eq 'NaN';
     return 0;
   }
 
   if(dd_is_inf($op)) {
+    if($examine) {
+      # Clear unset %Math::FakeDD::examine keys
+      $Math::FakeDD::examine{chop} = '';
+      $Math::FakeDD::examine{inc}  = '';
+    }
     return 15 if ($op > 0 && $repro eq 'Inf');
     return 15 if ($op < 0 && $repro eq '-Inf');
     return 0;
   }
 
   if($op == 0) {
+    if($examine) {
+      # Clear unset %Math::FakeDD::examine keys
+      $Math::FakeDD::examine{chop} = '';
+      $Math::FakeDD::examine{inc}  = '';
+    }
     return 15 if ($repro eq '0.0' || $repro eq '-0.0');
     return 0;
   }
@@ -487,6 +518,7 @@ sub dd_repro_test {
                       : $r[0];
 
   print "CHOPPED:\n$chopped\n\n" if $debug;
+  $Math::FakeDD::examine{chop} = $chopped if $examine;
 
   $ret += 2 if Math::FakeDD->new($chopped) < abs($op); # chop test ok.
 
@@ -509,13 +541,18 @@ sub dd_repro_test {
     $r[0]++ for 1..10;
   }
 
-  my $substitute = substr($r[0], -1, 1) + 1;
-  substr($r[0], -1, 1, "$substitute");
+  unless ($r[0] gt $chopped) {
+    print "OP: $op\n" if $debug;
+    #die "In UNLESS";
+    my $substitute = substr($r[0], -1, 1) + 1;
+    substr($r[0], -1, 1, "$substitute");
+  }
 
   my $incremented = defined($r[1]) ? $r[0] . 'e' . $r[1]
                                    : $r[0];
 
   print "INCREMENTED:\n$incremented\n" if $debug;
+  $Math::FakeDD::examine{inc} = $incremented if $examine;
 
   $ret += 4 if Math::FakeDD->new($incremented) > abs($op); # increment test ok
   return $ret;
