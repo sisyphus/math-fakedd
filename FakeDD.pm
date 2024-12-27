@@ -190,10 +190,16 @@ sub dd_repro {
     $prec = $addon + $exp;
     Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
     $Math::FakeDD::REPRO_PREC = $prec;
-    # Provide 2nd arg of 728 to mpfrtoa().
-    # 2 ** -348 (prec = 727) needs this.
-    return '-' . mpfrtoa($mpfr, 728) if $neg;
-    return mpfrtoa($mpfr, 728);
+
+    if(abs($arg->{msd}) <= 2 ** -348 && abs($arg->{msd}) >= 2 ** -1067) {
+      # Provide 2nd arg of 728 to mpfrtoa().
+      # 2 ** -348 (prec = 727) needs this.
+      return '-' . mpfrtoa($mpfr, 728) if $neg;
+      return mpfrtoa($mpfr, 728);
+    }
+
+    return '-' . mpfrtoa($mpfr) if $neg;
+    return mpfrtoa($mpfr);
 
   } # close $arg->{lsd} == 0
 
@@ -509,7 +515,13 @@ sub dd_repro_test {
     $r[1]++;
   }
 
-  return $ret + 6 if length($r[0]) < 2; # chop test and increment test inapplicable.
+  if(length($r[0]) < 2) { # chop test and increment test inapplicable.
+    if($examine) {
+      $Math::FakeDD::examine{chop} = '';
+      $Math::FakeDD::examine{inc}  = '';
+    }
+    return $ret + 6;
+  }
 
   substr($r[0], -1, 1, '0');
 

@@ -171,9 +171,149 @@ cmp_ok('1.78813934326171870e-07',
 cmp_ok('1.78813934326171880e-07',
        'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
 
-#print "INC: ", $Math::FakeDD::examine{inc}, "\n";
-#print "CHOP: ", $Math::FakeDD::examine{chop}, "\n";
+#### start tests for values that currently depend on  ####
+#### mpfrtoa() being called with a second arg of 728. ####
+# [0x1p-348 0x0p+0] - largest absolute value that needs that second arg.
+# [0xp-1067 0x0p+0] - smallest absolute value that needs that second arg.
+
+$str = '0x1p-348';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1.74406035046733853487515800217489770424180602237365518373890051762028905625417815502235110757472538703793801018276066319613730066266467094593207137055975531305773012905286447297432836868736576258182935459523088539413038e-105',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('1.74406035046733853487515800217489770424180602237365518373890051762028905625417815502235110757472538703793801018276066319613730066266467094593207137055975531305773012905286447297432836868736576258182935459523088539413030e-105',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('1.74406035046733853487515800217489770424180602237365518373890051762028905625417815502235110757472538703793801018276066319613730066266467094593207137055975531305773012905286447297432836868736576258182935459523088539413040e-105',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$dd = dd_nextup($dd); # This value should NOT require that second arg. (LSD is not zero, anyway.)
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "dd_nextup($str) ok");
+cmp_ok('1.744060350467338534875158002174897704241806022373655183738900517620289056254178155022351107574725387037938010182760663196137300662664670945932071370559755313057730129052864472974328368687365762581829354595230885394130387e-105',
+       'eq', $Math::FakeDD::examine{repro}, "dd_nextup($str)$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('1.744060350467338534875158002174897704241806022373655183738900517620289056254178155022351107574725387037938010182760663196137300662664670945932071370559755313057730129052864472974328368687365762581829354595230885394130380e-105',
+       'eq', $Math::FakeDD::examine{chop}, "dd_nextup($str): \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('1.744060350467338534875158002174897704241806022373655183738900517620289056254178155022351107574725387037938010182760663196137300662664670945932071370559755313057730129052864472974328368687365762581829354595230885394130390e-105',
+       'eq', $Math::FakeDD::examine{inc}, "dd_nextup($str): \$Math::FakeDD::examine{inc} ok") ;
+
+$str = '0x1p-1067';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('6.3e-322',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('6.0e-322',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('7.0e-322',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$dd = dd_nextdown($dd); # This value should NOT require that second arg.
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "dd_nextdown($str) ok");
+cmp_ok('6.27e-322',
+       'eq', $Math::FakeDD::examine{repro}, "dd_nextdown($str): \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('6.20e-322',
+       'eq', $Math::FakeDD::examine{chop}, "dd_nextdown($str): \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('6.30e-322',
+       'eq', $Math::FakeDD::examine{inc}, "dd_nextdown($str): \$Math::FakeDD::examine{inc} ok") ;
+
+#### end of tests for values that currently depend on ####
+#### mpfrtoa() being called with a second arg of 728. ####
+
+#### start confirmation that (2 ** -$x) is being handled     ####
+#### correctly for $x in the range 1068 to 1074 (inclusive). ####
+
+# 2 ** -1068: 3.16e-322
+$str = '0x1p-1068';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('3.16e-322',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('3.10e-322',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('3.20e-322',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+# 2 ** -1069: 1.6e-322
+$str = '0x1p-1069';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1.6e-322',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('1.0e-322',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('2.0e-322',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+# 2 ** -1070: 8e-323
+$str = '0x1p-1070';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('8e-323',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+# 2 ** -1071: 4e-323
+$str = '0x1p-1071';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('4e-323',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+# 2 ** -1072: 2e-323
+$str = '0x1p-1072';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('2e-323',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+# 2 ** -1073: 1e-323
+$str = '0x1p-1073';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1e-323',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+
+# 2 ** -1074: 5e-324
+$str = '0x1p-1074';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('5e-324',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+#### end of confirmation that (2 ** -$x) is being handled     ####
+#### correctly for $x in the range 1068 to 1074 (inclusive). ####
+
 
 done_testing();
 
+__END__
 
