@@ -257,7 +257,7 @@ sub dd_repro {
   Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
 
   if($different_signs) {
-    my $candidate = mpfrtoa($mpfr, 53);
+    my $candidate = mpfrtoa($mpfr); # was mpfrtoa($mpfr, 53) - apparently unnecessary
 
     # Might fail either the "chop" test or
     # the "round trip" test, but not both.
@@ -281,8 +281,8 @@ sub dd_repro {
       $prec++;
       Rmpfr_prec_round($mpfr_orig, $prec, MPFR_RNDN);
       $Math::FakeDD::REPRO_PREC = $prec;
-      return '-' . mpfrtoa($mpfr_orig, 53) if $neg;
-      return mpfrtoa($mpfr_orig, 53);
+      return '-' . mpfrtoa($mpfr_orig) if $neg; # was mpfrtoa($mpfr_orig, 53) - apparently unnecessary
+      return mpfrtoa($mpfr_orig);               # was mpfrtoa($mpfr_orig, 53) - apparently unnecessary
     }
 
     my $ret = _chop_test($candidate, $arg, 0);
@@ -307,7 +307,7 @@ sub dd_repro {
   # We need to detect the (rare) case that a chopped and
   # then incremented mantissa passes the round trip.
 
-  my $can = mpfrtoa($mpfr, 53);
+  my $can = mpfrtoa($mpfr); # was mpfrtoa($mpfr, 53) - apparently unnecessary
   my $ret = _chop_test($can, $arg, 1);
 
   if($ret eq 'ok') {
@@ -1387,13 +1387,20 @@ sub dd_stringify {
 
   # Deal with the possibility that the absolute value of one (and only
   # one) of the 2 doubles could be subnormal - ie less that 2 ** -1022.
-  if($expm < -1021) { Rmpfr_prec_round($mpfrm, 1074 + $expm, MPFR_RNDN) }   # msd is subnormal
 
-  elsif($self->{lsd}) { # Avoid the case that lsd is 0 !!!
-    my $expl = Rmpfr_get_exp($mpfrl);
-    if($expl < -1021) { Rmpfr_prec_round($mpfrl, 1074 + $expl, MPFR_RNDN) } # lsd is subnormal
+  if($expm < -1021) {   # msd is subnormal
+    Rmpfr_prec_round($mpfrm, 1074 + $expm, MPFR_RNDN);
+    return "[" . mpfrtoa($mpfrm, 53) . " " . '0.0' . "]";
   }
-  return "[" . mpfrtoa($mpfrm, 53) . " " . mpfrtoa($mpfrl, 53) . "]";
+
+  if($self->{lsd}) { # Avoid the case that lsd is 0 !!!
+    my $expl = Rmpfr_get_exp($mpfrl);
+    if($expl < -1021) { # lsd is subnormal
+      Rmpfr_prec_round($mpfrl, 1074 + $expl, MPFR_RNDN);
+      return "[" . mpfrtoa($mpfrm) . " " . mpfrtoa($mpfrl, 53) . "]";
+    }
+  }
+  return "[" . mpfrtoa($mpfrm) . " " . mpfrtoa($mpfrl) . "]";
 }
 
 sub dd_sub {

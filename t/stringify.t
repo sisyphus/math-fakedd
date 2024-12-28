@@ -54,6 +54,12 @@ $obj /= 2;
 cmp_ok("$obj", 'eq', "[2.781342323134e-309 0.0]", "4: subnormal msd stringifies correctly");
 cmp_ok(dd_repro_test(dd_repro($obj), $obj), '==', 15, "dd_repro_test passes for 2 ** -1025");
 
+$obj += 2 ** 100;
+cmp_ok("$obj", 'eq', "[1.2676506002282294e+30 2.781342323134e-309]", "5: subnormal lsd still stringifies correctly");
+
+$obj -= 2 ** 101;
+cmp_ok("$obj", 'eq', "[-1.2676506002282294e+30 2.781342323134e-309]", "sign change handled ok");
+
 # The next test didn't always pass on perls whose nvsize != 8.
 # Instead 'long double' and '__float128' builds would fail the
 # following mpfr library assertion when dd_stringify() was called:

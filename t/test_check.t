@@ -1,6 +1,6 @@
 
 # Check that the values that dd_repro_test uses internally are as expected.
-# It's intended that additional tests will included over time.
+# It's intended that additional tests will be included over time.
 # DBL_MIN = 2.2250738585072014e-308 = 2 ** -1022
 
 use strict;
@@ -171,8 +171,9 @@ cmp_ok('1.78813934326171870e-07',
 cmp_ok('1.78813934326171880e-07',
        'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
 
-#### start tests for values that currently depend on  ####
+#### Start tests for values that currently depend on  ####
 #### mpfrtoa() being called with a second arg of 728. ####
+
 # [0x1p-348 0x0p+0] - largest absolute value that needs that second arg.
 # [0xp-1067 0x0p+0] - smallest absolute value that needs that second arg.
 
@@ -218,10 +219,10 @@ cmp_ok('6.20e-322',
 cmp_ok('6.30e-322',
        'eq', $Math::FakeDD::examine{inc}, "dd_nextdown($str): \$Math::FakeDD::examine{inc} ok") ;
 
-#### end of tests for values that currently depend on ####
+#### End of tests for values that currently depend on ####
 #### mpfrtoa() being called with a second arg of 728. ####
 
-#### start confirmation that (2 ** -$x) is being handled     ####
+#### Start confirmation that (2 ** -$x) is being handled     ####
 #### correctly for $x in the range 1068 to 1074 (inclusive). ####
 
 # 2 ** -1068: 3.16e-322
@@ -309,11 +310,162 @@ cmp_ok('',
 cmp_ok('',
        'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
 
-#### end of confirmation that (2 ** -$x) is being handled     ####
+#### End of confirmation that (2 ** -$x) is being handled     ####
 #### correctly for $x in the range 1068 to 1074 (inclusive). ####
 
+# 2 ** -1025: # 2.781342323134e-309
+$str = '0x1p-1025';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('2.781342323134e-309',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('2.781342323130e-309',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('2.781342323140e-309',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$str = '0x1p-1025';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('2.781342323134e-309',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('2.781342323130e-309',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('2.781342323140e-309',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$str = '2.781342323134002e-309';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('2.781342323134e-309',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('2.781342323130e-309',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('2.781342323140e-309',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$str = '2.781342323134e-309';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('2.781342323134e-309',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('2.781342323130e-309',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('2.781342323140e-309',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+#### Begin examples where sprintf("%.17g", $val) and nvtoa($val) assign to different
+#### Math::FakeDD objects, even though nvtoa($val) == sprintf("%.17g", $val).
+
+$str = '1.2256808040331321e+24';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1225680804033132100000000.0',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('12256808040331320e8',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('12256808040331330e8',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+my $hi = dd_nextdown($dd);
+
+$str = '1.225680804033132e+24';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1225680804033132000000000.0',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('1225680804033130e9',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('1225680804033140e9',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+my $lo = dd_nextup($dd);
+cmp_ok($hi, '>', $lo, "nextdown (1.2256808040331321e+24) > nextup (1.225680804033132e+24)");
+
+######################################
+######################################
+
+$str = '1.571784478151522e-95';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1.571784478151522e-95',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('1.571784478151520e-95',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('1.571784478151530e-95',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$hi = dd_nextdown($dd);
+
+$str = '1.5717844781515219e-95';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1.5717844781515219e-95',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('1.5717844781515210e-95',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('1.5717844781515220e-95',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$lo = dd_nextup($dd);
+cmp_ok($hi, '>', $lo, "nextdown (1.571784478151522e-95) > nextup (1.5717844781515219e-95)");
+
+######################################
+######################################
+
+$str = '1.256442731808205e-86';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1.256442731808205e-86',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('1.256442731808200e-86',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('1.256442731808210e-86',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$hi = dd_nextdown($dd);
+
+$str = '1.2564427318082049e-86';
+$dd = Math::FakeDD->new($str);
+$repro = dd_repro($dd);
+cmp_ok(dd_repro_test($repro, $dd, 'examine'), '==', 15, "$str ok");
+cmp_ok('1.2564427318082049e-86',
+       'eq', $Math::FakeDD::examine{repro}, "$str: \$Math::FakeDD::examine{repro} ok") ;
+cmp_ok('1.2564427318082040e-86',
+       'eq', $Math::FakeDD::examine{chop}, "$str: \$Math::FakeDD::examine{chop} ok") ;
+cmp_ok('1.2564427318082050e-86',
+       'eq', $Math::FakeDD::examine{inc}, "$str: \$Math::FakeDD::examine{inc} ok") ;
+
+$lo = dd_nextup($dd);
+cmp_ok($hi, '>', $lo, "nextdown (1.256442731808205e-86) > nextup (1.2564427318082049e-86)");
+
+#### End examples where sprintf("%.17g", $val) and nvtoa($val) assign to different
+#### Math::FakeDD objects, even though nvtoa($val) == sprintf("%.17g", $val).
 
 done_testing();
 
 __END__
+
+TODO:
+1.2256808040331321e+24:
+[1.225680804033132e+24 129440000.0]
+[1.225680804033132e+24 29440000.0]
+
+1.2564427318082049e-86:
+[1.256442731808205e-86 -5.122305591076454e-103]
+[1.256442731808205e-86 4.877694408923547e-103]
+
+-1.5717844781515219e-95:
+[-1.571784478151522e-95 -4.909479124227983e-113]
+[-1.571784478151522e-95 -1.0490947912422798e-111]
+
 
