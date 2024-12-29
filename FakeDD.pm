@@ -704,7 +704,7 @@ sub dd_atan2 {
 
   # When dd_atan2 is called via overloading of 'atan2' a
   # third argument (which we cannot ignore) will be provided
-  die "Wrong number of arguments given to dd_add()"
+  die "Wrong number of arguments given to dd_atan2()"
     if @_ > 3;
 
   my ($rop1, $rop2);
@@ -1588,7 +1588,13 @@ sub mpfr2098 {
   my $arg = shift;
 
   if($itsa == 4) {                           # PV
+    my $turnoff = 0;
+    if(!$Math::MPFR::NNW) {
+      $Math::MPFR::NNW = 1;  # warn if $arg contains non-numeric character(s).
+      $turnoff = 1;
+    }
     Rmpfr_set_str($ret, $arg, 0, MPFR_RNDN);
+    $Math::MPFR::NNW = 0 if $turnoff;  # $Math::MPFR::NNW retains initial setting.
     return $ret;
   }
 
