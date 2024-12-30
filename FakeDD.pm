@@ -1583,9 +1583,14 @@ sub mpfr2098 {
   # NV (perl floating point type) or Math::MPFR object.
 
   die "Invalid arg ($itsa) passed internally to mpfr2098()"
-    unless ($itsa > 0 && $itsa <= 4);
+    unless ($itsa > 0 && $itsa <= 5);
 
   my $arg = shift;
+
+  if($itsa == 5) {                           # Math::MPFR object
+    Rmpfr_set($ret, $arg, MPFR_RNDN);
+    return $ret;
+  }
 
   if($itsa == 4) {                           # PV
     my $turnoff = 0;
@@ -1603,7 +1608,7 @@ sub mpfr2098 {
     return $ret;
   }
 
-  Rmpfr_set_IV($ret, $arg, MPFR_RNDN);       # IV/UV
+  Rmpfr_set_IV($ret, $arg, MPFR_RNDN);       # IV/UV ($itsa is 1 or 2)
   return $ret;
 
 }
