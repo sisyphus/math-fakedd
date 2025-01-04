@@ -88,7 +88,7 @@ my @tags = qw(
 
 %Math::FakeDD::EXPORT_TAGS = (all => [@tags]);
 
-$Math::FakeDD::VERSION =  '0.09';
+$Math::FakeDD::VERSION =  '1.01';
 
 # Whenever dd_repro($obj) returns its string representation of
 # the value of $obj, $Math::FakeDD::REPRO_PREC is set to the
@@ -581,15 +581,9 @@ sub dd_abs {
   my $obj;
   my $mpfr = Rmpfr_init2(2098);
   if(ref($_[0]) eq 'Math::FakeDD') {
-    # Should be able to do simply:
-    # $obj = mpfr2dd($_[0]->{mpfr});
-    # I suspect "action at a distance" from dd_repro().
-    Rmpfr_set($mpfr, $_[0]->{mpfr}, MPFR_RNDN);
-    $obj = mpfr2dd($mpfr);
+    $obj = dd_copy($_[0]);
   }
   else {
-    #Rmpfr_set($mpfr, mpfr2098($_[0]), MPFR_RNDN);
-    #$obj = mpfr2dd($mpfr);
     $obj = mpfr2dd(mpfr2098($_[0]));
   }
 
@@ -930,50 +924,50 @@ sub dd_euler {
 }
 
 sub dd_exp {
-  my $obj;
-  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
-  else {
-    $obj = Math::FakeDD->new(shift);
-  }
-  my $ret = Math::FakeDD->new();
   my $mpfr = Rmpfr_init2(2098);
-  Rmpfr_exp($mpfr, dd2mpfr($obj), MPFR_RNDN);
-  $obj = mpfr2dd($mpfr);
-  $ret->{msd} = $obj->{msd};
-  $ret->{lsd} = $obj->{lsd};
-  $ret->{mpfr} = $obj->{mpfr};
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    Rmpfr_set($mpfr, $_[0]->{mpfr}, MPFR_RNDN);
+  }
+  else {
+    my $new_obj = mpfr2dd(mpfr2098($_[0]));
+    Rmpfr_set($mpfr, $new_obj->{mpfr}, MPFR_RNDN);
+  }
+
+  Rmpfr_exp($mpfr, $mpfr, MPFR_RNDN);
+  my $ret = mpfr2dd($mpfr);
   return $ret;
 }
 
 sub dd_exp2 {
-  my $obj;
-  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
-  else {
-    $obj = Math::FakeDD->new(shift);
-  }
-  my $ret = Math::FakeDD->new();
   my $mpfr = Rmpfr_init2(2098);
-  Rmpfr_exp2($mpfr, dd2mpfr($obj), MPFR_RNDN);
-  $obj = mpfr2dd($mpfr);
-  $ret->{msd} = $obj->{msd};
-  $ret->{lsd} = $obj->{lsd};
-  $ret->{mpfr} = $obj->{mpfr};
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    Rmpfr_set($mpfr, $_[0]->{mpfr}, MPFR_RNDN);
+  }
+  else {
+    my $new_obj = mpfr2dd(mpfr2098($_[0]));
+    Rmpfr_set($mpfr, $new_obj->{mpfr}, MPFR_RNDN);
+  }
+
+  Rmpfr_exp2($mpfr, $mpfr, MPFR_RNDN);
+  my $ret = mpfr2dd($mpfr);
   return $ret;
 }
 
 sub dd_exp10 {
-  my $obj;
-  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
-  else {
-    $obj = Math::FakeDD->new(shift);
-  }
-  my $ret = Math::FakeDD->new();
   my $mpfr = Rmpfr_init2(2098);
-  Rmpfr_exp10($mpfr, dd2mpfr($obj), MPFR_RNDN);
-  $obj = mpfr2dd($mpfr);
-  $ret->{msd} = $obj->{msd};
-  $ret->{lsd} = $obj->{lsd};
-  $ret->{mpfr} = $obj->{mpfr};
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    Rmpfr_set($mpfr, $_[0]->{mpfr}, MPFR_RNDN);
+  }
+  else {
+    my $new_obj = mpfr2dd(mpfr2098($_[0]));
+    Rmpfr_set($mpfr, $new_obj->{mpfr}, MPFR_RNDN);
+  }
+
+  Rmpfr_exp10($mpfr, $mpfr, MPFR_RNDN);
+  my $ret = mpfr2dd($mpfr);
   return $ret;
 }
 
@@ -1041,50 +1035,50 @@ sub dd_int {
 }
 
 sub dd_log {
-  my $obj;
-  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
-  else {
-    $obj = Math::FakeDD->new(shift);
-  }
-  my $ret = Math::FakeDD->new();
   my $mpfr = Rmpfr_init2(2098);
-  Rmpfr_log($mpfr, dd2mpfr($obj), MPFR_RNDN);
-  $obj = mpfr2dd($mpfr);
-  $ret->{msd} = $obj->{msd};
-  $ret->{lsd} = $obj->{lsd};
-  $ret->{mpfr} = $obj->{mpfr};
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    Rmpfr_set($mpfr, $_[0]->{mpfr}, MPFR_RNDN);
+  }
+  else {
+    my $new_obj = mpfr2dd(mpfr2098($_[0]));
+    Rmpfr_set($mpfr, $new_obj->{mpfr}, MPFR_RNDN);
+  }
+
+  Rmpfr_log($mpfr, $mpfr, MPFR_RNDN);
+  my $ret = mpfr2dd($mpfr);
   return $ret;
 }
 
 sub dd_log2 {
-  my $obj;
-  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
-  else {
-    $obj = Math::FakeDD->new(shift);
-  }
-  my $ret = Math::FakeDD->new();
   my $mpfr = Rmpfr_init2(2098);
-  Rmpfr_log2($mpfr, dd2mpfr($obj), MPFR_RNDN);
-  $obj = mpfr2dd($mpfr);
-  $ret->{msd} = $obj->{msd};
-  $ret->{lsd} = $obj->{lsd};
-  $ret->{mpfr} = $obj->{mpfr};
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    Rmpfr_set($mpfr, $_[0]->{mpfr}, MPFR_RNDN);
+  }
+  else {
+    my $new_obj = mpfr2dd(mpfr2098($_[0]));
+    Rmpfr_set($mpfr, $new_obj->{mpfr}, MPFR_RNDN);
+  }
+
+  Rmpfr_log2($mpfr, $mpfr, MPFR_RNDN);
+  my $ret = mpfr2dd($mpfr);
   return $ret;
 }
 
 sub dd_log10 {
-  my $obj;
-  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
-  else {
-    $obj = Math::FakeDD->new(shift);
-  }
-  my $ret = Math::FakeDD->new();
   my $mpfr = Rmpfr_init2(2098);
-  Rmpfr_log10($mpfr, dd2mpfr($obj), MPFR_RNDN);
-  $obj = mpfr2dd($mpfr);
-  $ret->{msd} = $obj->{msd};
-  $ret->{lsd} = $obj->{lsd};
-  $ret->{mpfr} = $obj->{mpfr};
+
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    Rmpfr_set($mpfr, $_[0]->{mpfr}, MPFR_RNDN);
+  }
+  else {
+    my $new_obj = mpfr2dd(mpfr2098($_[0]));
+    Rmpfr_set($mpfr, $new_obj->{mpfr}, MPFR_RNDN);
+  }
+
+  Rmpfr_log10($mpfr, $mpfr, MPFR_RNDN);
+  my $ret = mpfr2dd($mpfr);
   return $ret;
 }
 
@@ -1345,19 +1339,16 @@ sub dd_spaceship {
 }
 
 sub dd_sqrt {
-  my $obj;
-  if(ref($_[0]) eq 'Math::FakeDD') { $obj = shift }
-  else {
-    $obj = Math::FakeDD->new(shift);
+my $mpfr = Rmpfr_init2(2098);
+  if(ref($_[0]) eq 'Math::FakeDD') {
+    Rmpfr_set($mpfr, $_[0]->{mpfr}, MPFR_RNDN);
   }
-  my $ret = Math::FakeDD->new();
-  my $mpfr = Rmpfr_init2(2098);
-  Rmpfr_sqrt($mpfr, dd2mpfr($obj), MPFR_RNDN);
+  else {
+    Rmpfr_set($mpfr, mpfr2098(shift), MPFR_RNDN);
+  }
 
-  $obj = mpfr2dd($mpfr);
-  $ret->{msd}  = $obj->{msd};
-  $ret->{lsd}  = $obj->{lsd};
-  $ret->{mpfr} = $obj->{mpfr};
+  Rmpfr_sqrt($mpfr, $mpfr, MPFR_RNDN);
+  my $ret = mpfr2dd($mpfr);
   return $ret;
 }
 
@@ -1797,6 +1788,8 @@ sub unpackx {
 #}
 
 sub dd_nextup {
+  die "Arg given to dd_nextup() must be a Math::FakeDD object"
+    unless ref($_[0]) eq 'Math::FakeDD';
   my $dd = shift;
   return Math::FakeDD->new(2 ** -1074) if $dd == 0;
   return dd_nan() if dd_is_nan($dd);
@@ -1837,6 +1830,8 @@ return $dd + $keep;
 }
 
 sub dd_nextdown {
+  die "Arg given to dd_nextdown() must be a Math::FakeDD object"
+    unless ref($_[0]) eq 'Math::FakeDD';
   my $dd = shift;
   return Math::FakeDD->new(-(2 ** -1074)) if $dd == 0;
   return dd_nan() if dd_is_nan($dd);

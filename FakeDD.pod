@@ -23,6 +23,18 @@
   perl configurations.
   See ARITMETIC IMPLEMENTATION section below.
 
+  As of version 1.01, the internals of this module has changed, and many
+  of the functions have been rewritten.
+  However, the user interface remains unchanged.
+  I'm hoping that, over time, these changes will help me to reduce the
+  insaneness of the dd_repro() and dd_repro_test() functions.
+  In earlier versions, the Math::FakeDD objects carried with them only
+  the more siginificant double ($obj->{msd}) and the less significant
+  double ($obj->{lsd}).
+  They now also hold the 2098 bit value ($obj->{mpfr}), in the form of
+  a Math::MPFR object, from which the $obj->{msd} and $obj->{lsd}
+  values can be derived.
+
 =head1 SYNOPSIS
 
   use Math::FakeDD qw(:all);

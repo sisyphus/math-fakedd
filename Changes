@@ -1,6 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
-0.09
+1.01
+ - Rework the internals. (Details in pod.)
  - Fix (intermittently) failing test in t/next.t. See
    http://www.cpantesters.org/cpan/report/797cfc22-6cfd-1014-a069-bac4e3396204
 
