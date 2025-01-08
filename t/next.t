@@ -31,17 +31,18 @@ cmp_ok(is_subnormal(2**-1022 + 2**-1023), '==', 0, "is_subnormal(2**-1022 + 2**-
 cmp_ok(is_subnormal(2**-1022 - 2**-1074), '==', 1, "is_subnormal(2**-1022 - 2**-1074) returns 1");
 
 my $nu = dd_nextup($nan);
-cmp_ok(dd_is_nan($nu), '!=', 0, "nextup from NaN is NaN");
+cmp_ok(dd_is_nan($nu), '==', 1, "nextup from NaN is NaN");
 
 my $nd= dd_nextdown($nan);
-cmp_ok(dd_is_nan($nd), '!=', 0, "nextdown from NaN is NaN");
+cmp_ok(dd_is_nan($nd), '==', 1, "nextdown from NaN is NaN");
 
 $nu = dd_nextup($pinf);
 cmp_ok($nu, '>', 0, "nextup from +Inf is greater than 0");
-cmp_ok(dd_is_inf($nu), '!=', 0, "nextup from +Inf is Inf");
+cmp_ok(dd_is_inf($nu), '==', 1, "nextup from +Inf is Inf");
 
 $nd = dd_nextdown($pinf);
 cmp_ok($nd, '==', $Math::FakeDD::DD_MAX, "nextdown from +Inf is " . $Math::FakeDD::DD_MAX);
+cmp_ok(dd_is_inf(dd_nextup($nd)), '==', 1, 'nextup from $Math::FakeDD::DD_MAX is inf');
 
 $nu = dd_nextup($ninf);
 cmp_ok($nu, '==', -$Math::FakeDD::DD_MAX, "nextup from -Inf is " . -$Math::FakeDD::DD_MAX);

@@ -73,7 +73,7 @@ require Exporter;
 my @tags = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_catalan dd_cmp dd_clone dd_copy dd_cos dd_dec
-  dd_div dd_div_eq dd_eq dd_euler dd_exp dd_exp2 dd_exp10
+  dd_div dd_div_eq dd_dump dd_eq dd_euler dd_exp dd_exp2 dd_exp10
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_log2 dd_log10 dd_lt dd_lte
   dd_mul dd_mul_eq dd_nan dd_neq
   dd_nextup dd_nextdown dd_numify dd_pi dd_pow dd_pow_eq dd_repro dd_repro_test
@@ -906,6 +906,17 @@ sub dd_div_eq {
 
 }
 
+sub dd_dump {
+  my $s1 = "[" . sprintf("%.17g", $_[0]->{msd}) . " " . sprintf("%.17g", $_[0]->{lsd}) . "]";
+  my $s2 = sprintx($_[0]);
+  my ($s3, $exp) = Rmpfr_deref2($_[0]->{mpfr}, 2, 0, MPFR_RNDN);
+  if($s3 =~ /^1/)  {
+    $s3 =~ s/0+$//;
+    $s3 = "0." .  $s3 . "E$exp";
+  }
+  return "$s1\n$s2\n$s3\n";
+}
+
 sub dd_eq {
 
   # When dd_eq is called via overloading of '==' a
@@ -1217,15 +1228,12 @@ sub dd_numify {
   # by Test::More if (and only if) a test performing a
   # comparisons that involved a Math::FakeDD object failed.
 
-  die "Argument passed to dd_numify must ge a Math::FakeDD object"
+  die "Argument passed to dd_numify must be a Math::FakeDD object"
     unless ref($_[0]) eq 'Math::FakeDD';
 
-  my $arg = shift;
-  #return $arg->{msd} + $arg->{lsd}; # Information might be lost if
-                                    # NV type is not DoubleDouble.
-  #print "### dd_numify called ###\n";
-
-  return dd2mpfr($arg); # A better choice ??
+  my $ret = Rmpfr_init2(2098);
+  Rmpfr_set($ret, $_[0]->{mpfr}, MPFR_RNDN);
+  return $ret;
 }
 
 sub dd_pi {
