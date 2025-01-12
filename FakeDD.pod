@@ -15,7 +15,7 @@
 
   See the introductory explanation of "DoubleDouble" arithmetic in the
   "Double-double arithmetic" section of:
-  https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format
+  L<https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format>
 
 =head1 DESCRIPTION
 
@@ -23,7 +23,7 @@
   perl configurations.
   See ARITMETIC IMPLEMENTATION section below.
 
-  As of version 1.01, the internals of this module has changed, and many
+  As of version 1.01, the internals of this module have changed, and many
   of the functions have been rewritten.
   However, the user interface remains unchanged.
   I'm hoping that, over time, these changes will help me to reduce the
@@ -32,8 +32,8 @@
   the more siginificant double ($obj->{msd}) and the less significant
   double ($obj->{lsd}).
   They now also hold the 2098 bit value ($obj->{mpfr}), in the form of
-  a Math::MPFR object, from which the $obj->{msd} and $obj->{lsd}
-  values can be derived.
+  a Math::MPFR object which holds an exact 2098-bit representation of
+  the value stored by the pair of doubles.
 
 =head1 SYNOPSIS
 
@@ -255,7 +255,7 @@
    this $str is assigned to a new Math::FakeDD object, then the
    new Math::FakeDD object will be identical to (ie a reproduction
    of) the Math::FakeDD object from which $str was derived.
-   Also set $Math::FakeDD::RETRO_PREC to the bit-precision value
+   Also set $Math::FakeDD::REPRO_PREC to the bit-precision value
    that was used in determining $str.
    If $Math::FakeDD::REPRO_PREC begins with ">", then the value that
    dd_repro() returned was altered slightly (away from zero) from
@@ -338,12 +338,13 @@
    The returned string is NOT suitable as an argument to new(), or
    to dd_assign(), or to mpfr2098().
 
-  $nv = dd_numify($obj); # Mainly for '0+' overloading.
+  $mpfr = dd_numify($obj); # Mainly for '0+' overloading.
 
-   Beginning in version 0.08, this function now converts $obj to a
-   2098-bit precision Math::MPFR object.
-   (Previously it converted $obj to an NV, as accurately as the
-   precision of the NV allowed.)
+   Beginning in version 1.01, this function returns $_[0]->{mpfr},
+   which is identical to what was returned in the previous version
+   (0.08) of Math::FakeDD .
+   Prior to 0.08 it returned an NV that held the value of $obj
+   (as accurately as the precision of the NV allowed.)
 
   printx($obj);
 
@@ -355,12 +356,30 @@
    Same as dd_stringify($obj), except that the 2 doubles are
    presented in hex ("%a") format, instead of decimal format.
 
+   NOTE: If perl's nvtype is the 80-bit extended precision
+         long double then the "%a" formatting will be different
+         (albeit numerically equivalent) to that which is
+         presented on perls that have a different nvtype; eg:
+         $Math::FakeDD::DD_MAX will be stringified to
+           [0xf.ffffffffffff8p+1020 0xf.ffffffffffff8p+966]
+         instead of
+           [0x1.fffffffffffffp+1023 0x1.fffffffffffffp+969]
+
   $str = unpackx($obj);
 
    Same as dd_stringify($obj), except that the 2 doubles have
    each been unpacked into hex format by doing:
 
      unpack "H*", pack "d>", $double;
+
+  $str = dd_dump($obj);
+   Returns a string containing the following information:
+    1) a decimal representation of $obj,same as print($obj),
+       except that the values are shown in "%.17g" format;
+    2) a hex representation of $obj, same as printx($obj);
+    3) a base 2 representation of $obj->{mpfr}, same as
+       Math::MPFR::Rmpfr_dump($obj->{mpfr}), except that
+       trailing zeroes in the mantissa have been removed.
 
 =head1 OPERATOR OVERLOADING
 

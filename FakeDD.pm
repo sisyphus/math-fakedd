@@ -491,12 +491,6 @@ sub dd_repro_test {
 
   my @r = split /e/i, $repro;
 
-  if($debug) {
-    print "SPLIT:\n$r[0]";
-    if(defined($r[1])) { print " $r[1]\n" }
-    else { print " no exponent\n" }
-  }
-
   # Increment $ret by 8 if and only if there are no errant trailing
   # zeroes in $r[0] .
 
