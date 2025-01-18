@@ -15,6 +15,12 @@ cmp_ok(dd_repro_test(dd_repro($obj), $obj), '==', 15, "dd_repro_test passes for 
 dd_assign($obj, '1.125');
 cmp_ok(dd_repro_test(dd_repro($obj), $obj), '==', 15, "dd_repro_test passes for '1.125'");
 
+if(4 > Math::MPFR::MPFR_VERSION_MAJOR ) {
+  warn "Skipping tests that rely on mpfr library being at version 4 or later\n";
+  done_testing();
+  exit 0;
+}
+
 $obj += 2 ** -1074;
 cmp_ok("$obj", 'eq', "[1.125 5e-324]",   "1: subnormal lsd stringifies correctly");
 cmp_ok(dd_repro_test(dd_repro($obj), $obj), '==', 15, "dd_repro_test passes after 1st addition of 5e-324");

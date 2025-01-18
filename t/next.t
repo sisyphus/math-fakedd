@@ -51,6 +51,12 @@ $nd = dd_nextdown($ninf);
 cmp_ok($nd, '<', 0, "nextdown from -Inf is less than 0");
 cmp_ok(dd_is_inf($nd), '!=', 0, "nextdown from -Inf is Inf");
 
+if(4 > Math::MPFR::MPFR_VERSION_MAJOR ) {
+  warn "Skipping tests that rely on mpfr library being at version 4 or later\n";
+  done_testing();
+  exit 0;
+}
+
 $nu = dd_nextup($pzero);
 cmp_ok($nu, '==', Math::FakeDD::DBL_DENORM_MIN, "nextup from +0 is $dd_denorm_min");
 
