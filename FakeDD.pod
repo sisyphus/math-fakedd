@@ -10,8 +10,8 @@
   This module needs Math::MPFR, which in turn requires the GMP and MPFR
   C libraries.
 
-  The GMP library is available from  : https://gmplib.org
-  The MPFR library is available from : https://www.mpfr.org
+  The GMP library is available from  : L<https://gmplib.org>
+  The MPFR library is available from : L<https://www.mpfr.org>
 
   See the introductory explanation of "DoubleDouble" arithmetic in the
   "Double-double arithmetic" section of:
@@ -27,9 +27,9 @@
   of the functions have been rewritten.
   However, the user interface remains unchanged.
   I'm hoping that, over time, these changes will help me to reduce the
-  insaneness of the dd_repro() and dd_repro_test() functions.
+  insaneness of the path that dd_repro() takes.
   In earlier versions, the Math::FakeDD objects carried with them only
-  the more siginificant double ($obj->{msd}) and the less significant
+  the more significant double ($obj->{msd}) and the less significant
   double ($obj->{lsd}).
   They now also hold the 2098 bit value ($obj->{mpfr}), in the form of
   a Math::MPFR object which holds an exact 2098-bit representation of
@@ -272,13 +272,16 @@
 
   $iv = dd_repro_test(dd_repro($obj), $obj [, $opt1[, $opt2]] );
 
+   Test that dd_repro($obj) returns the correct string. Be careful
+   that the string provided as 1st arg is as returned by dd_repro($obj).
+
    $opt1 and $opt2 are optional, and will have no effect if they don't
    match either /debug/i or /examine/i.
 
-   If $obj is either zero, or an inifinity or a NaN, then it is checked
-   that they match the expected form. Upon success, they return 15;
-   upon failure, 0 is returned - and no other checks are done though,
-   if /examine/i was matched, then $Math::FakeDD::examine{repro} will
+   If $obj is either zero, or an inifinity or a NaN, then we check
+   that the string matches the expected form. Upon success, return 15;
+   upon failure, 0 is returned. No other checks are done though, if
+  /examine/i was matched, then $Math::FakeDD::examine{repro} will
    be set to the string that was tested and the other
    %Math::FakeDD::examine keys will be set to the empty string.
 
@@ -296,20 +299,20 @@
    The following 2 tests are conducted:
 
    1) check that Math::FakeDD->new($str) == $obj.
-      $iv & 1 will be true if and only if this test passes.
+      Set $iv to 1 if and only if this test passes.
       $Math::FakeDD::examine{repro} will be set to $str if the third
       arg matches /examine/i.
       $str will be displayed if the third arg matches /debug/i.
 
    2) check that there are no trailing zeroes in the mantissa part of $str.
-      $iv & 8 will be true if and only if this test passes.
+      Set $iv += 8 if and only if this test passes.
 
    If the mantissa part of $str consists of only 1 digit, then $iv is
    incremented by 6, and returned. The following two tests (3 and 4)
-   are omitted because they are irrelenant:
+   are omitted because they are irrelevant:
 
    3) chop($str) and check that Math::FakeDD->new($str) < $obj.
-      $iv & 2 will be true if and only if this test passes.
+      Set $iv += 2 if and only if this test passes.
       $Math::FakeDD::examine{chop} will be set to $str if the 3rd
       or 4th arg matches /examine/i.
       $str will be displayed if the 3rd or 4th arg matches /debug/i.
@@ -317,7 +320,7 @@
    4) increment (the chopped)  $str; eg $str would change from '1992'
       to 1993, or from '1999' to '2000'.
       Then test that Math::FakeDD->new($str) > $obj.
-      $iv & 4 will be true if and only if this test passes.
+      Set $iv += 4 if and only if this test passes.
       $Math::FakeDD::examine{inc} will be set to $str if the 3rd
       or 4th arg matches /examine/i.
       $str will be displayed if the 3rd or 4th arg matches /debug/i.
