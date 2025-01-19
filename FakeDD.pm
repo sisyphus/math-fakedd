@@ -3,6 +3,7 @@ package Math::FakeDD;
 use strict;
 use warnings;
 use Math::MPFR qw(:mpfr);
+
 use Config;
 
 use 5.022; # for $Config{longdblkind}
@@ -69,6 +70,18 @@ use overload
 
 require Exporter;
 *import = \&Exporter::import;
+
+my $v = MPFR_VERSION_MAJOR;
+if($v < 4) {
+  warn "
+  This module requires that Math::MPFR was built against version 4
+  of the mpfr C library. You have only ", Rmpfr_get_version, ".\n",
+  "  As a result, you will experience a fatal assertion error whenever
+  the mpfr library needs to use a 1-bit precision value.
+  Some test suite tests are skipped to avoid such an error.
+  The need to use a 1-bit precision value is fairly limited, so
+  we'll go ahead anyway. You have been warned !!\n";
+}
 
 my @tags = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
@@ -433,6 +446,9 @@ sub _chop_test {
   return 'ok';
 }
 
+############################
+############################
+
 sub dd_repro_test {
   my ($repro, $op) = (shift, shift);
   my $ret = 0;
@@ -505,7 +521,7 @@ sub dd_repro_test {
   # We remove from $repro any trailing mantissa zeroes, and then
   # replace the least significant digit with zero.
   # IOW, we effectively chop off the least siginificant digit, thereby
-  # rounding it down to the next lowest decimal precision.)
+  # rounding it down to the next lowest decimal precision.
   # This altered string should assign to a DoubleDouble value that is
   # less than the given $op.
 
@@ -556,7 +572,6 @@ sub dd_repro_test {
 
   unless ($r[0] gt $chopped) {
     print "OP: $op\n" if $debug;
-    #die "In UNLESS";
     my $substitute = substr($r[0], -1, 1) + 1;
     substr($r[0], -1, 1, "$substitute");
   }
@@ -570,6 +585,9 @@ sub dd_repro_test {
   $ret += 4 if Math::FakeDD->new($incremented) > abs($op); # increment test ok
   return $ret;
 }
+
+############################
+############################
 
 sub dd_abs {
   my $obj;
