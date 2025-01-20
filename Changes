@@ -1,5 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
+1.02
+
 1.01
  - Add new function dd_dump().
  - Rework the internals. (Details in pod.)
