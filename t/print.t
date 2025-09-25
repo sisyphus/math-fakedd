@@ -48,7 +48,8 @@ for(0, '256.125', '0.1', '-1.3', 0.14 / 10) {
 for(1 .. 1000) {
   my $sign = '';
   $sign = '-' unless $_ % 5;
-  my $s0 = rand(),
+  my $s0 = rand();
+  $s0 = (split /e/i, $s0)[0] if $s0 =~ /e/i;
   my $e = 'e';
   $e = 'e-'if $_ % 3;
   my $pow = int(rand(100));
