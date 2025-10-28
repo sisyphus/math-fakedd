@@ -2,6 +2,7 @@ Revision history for Perl module Math::FakeDD
 
 1.02
  - Sanitize string returned by rand() in t/print.t.
+ - Add t/subnormal.t.
 
 1.01
  - Add new function dd_dump().

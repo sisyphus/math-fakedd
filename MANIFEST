@@ -22,6 +22,7 @@ t/print.t
 t/sparse.t
 t/sqrt.t
 t/stringify.t
+t/subnormal.t
 t/sub.t
 t/test_check.t
 t/validate.t
