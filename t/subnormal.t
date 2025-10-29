@@ -30,13 +30,15 @@ for(1..500) {
   for(1 .. $how_many) {
     $arg += 2 ** -($pow[int(rand(51))]);
   }
-  cmp_ok(nvtoa($arg), '==', mpfrtoa(Math::MPFR->new($arg)), "$arg - strings numify equivalently");
-  # mpfrtoa() does not yet reduce subnormal values to their correct (minimum) precision,
-  # so we skip the following test for now.
-  # When (if) I fix mpfrtoa to allow for subnormalization, we'll also need to stringify $arg accurately:
-  # my $mpfr_temp = Math::MPFR->new($arg);
-  # cmp_ok(nvtoa($arg), 'eq', mpfrtoa(Math::MPFR::subnormalize_generic("$mpfr_temp", -1073, 1024, 53)), "$arg - strings are identical");
+  cmp_ok(nvtoa($arg), '==', mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+  cmp_ok(nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
 }
+
+# Values that fail above test for identical strings:
+# 1.08646184497422e-311 # mpfrtoa_subn returns 1.0864618449742e-311 instead of 1.086461844974e-311
+# 6.32404026676796e-322 # mpfrtoa_subn returns 6.32e-322 instead of 6.3e-322
+# mpfrtoa_subn return value is minimal in length for the given reduced precision - but not when
+# re-assigned to 53-bit precision.
 
 my($dd1, $dd2, $dd3, $dd4) = ( Math::FakeDD->new(2.01) ** -505, Math::FakeDD->new(2.01) ** -520,
                                Math::FakeDD->new(2.01) ** 505, Math::FakeDD->new(2.01) ** 520 );
@@ -66,3 +68,31 @@ my $sq_subn_retrieved = $sq_subn - (2.01 ** -1041);
 cmp_ok($sq_subn_retrieved, '==', $dd2 ** 2, 'Original value retrieved');
 
 done_testing();
+
+sub mpfrtoa_subn { # obj, prec, emin, emax
+  return mpfrtoa($_[0]) if !Rmpfr_regular_p($_[0]);
+
+  my $exp = Rmpfr_get_exp($_[0]);
+
+  if($exp > $_[3]) {
+    return '-Inf' if Rmpfr_signbit($_[0]);
+    return 'Inf';
+  }
+
+  if($exp < $_[2]) {
+    return '-0.0' if Rmpfr_signbit($_[0]);
+    return '0.0';
+  }
+
+  my $places = $_[1] - 1;
+  if($exp < ($_[2] + $places)) {
+    # Value is subnormal.
+    my $prec = $exp + 1 - $_[2];
+    #$prec++;
+    my $mpfr_temp = Rmpfr_init2($prec);
+    Rmpfr_set($mpfr_temp, $_[0], MPFR_RNDN);
+    return mpfrtoa($mpfr_temp);
+  }
+
+  return mpfrtoa($_[0]);
+}
