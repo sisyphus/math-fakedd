@@ -21,6 +21,13 @@ if($Math::MPFR::VERSION < 4.44 ) {
   exit 0;
 }
 
+if(!Math::MPFR::MPFR_4_0_2_OR_LATER) {
+  cmp_ok(1, '==', 1, 'dummy test');
+  warn "Skipping tests because mpfr version (", MPFR_VERSION_STRING(), ") needs to be at 4.0.2 or greater";
+  done_testing();
+  exit 0;
+}
+
 my @pow = (1023 .. 1074);
 
 for(1..500) {
@@ -34,11 +41,29 @@ for(1..500) {
   cmp_ok(nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
 }
 
-# Values that fail above test for identical strings:
-# 1.08646184497422e-311 # mpfrtoa_subn returns 1.0864618449742e-311 instead of 1.086461844974e-311
-# 6.32404026676796e-322 # mpfrtoa_subn returns 6.32e-322 instead of 6.3e-322
-# mpfrtoa_subn return value is minimal in length for the given reduced precision - but not when
-# re-assigned to 53-bit precision.
+for my $arg(1.08646184497422e-311, 6.32404026676796e-322) {
+  # These will fail unless the 2-arg form of mpfrtoa() is called.
+  cmp_ok(nvtoa($arg), '==', mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+  cmp_ok(nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
+}
+
+my $dbl_max = 1.7976931348623157e+308;
+my $norm_min = 2.2250738585072014e-308;
+my $denorm_max = $norm_min - (2 ** -1074);
+
+cmp_ok($norm_min, '>', $denorm_max, "NORM_MIN > DENORM_MAX");
+
+my $mpfr_inf = Math::MPFR->new($dbl_max);
+Rmpfr_nextabove($mpfr_inf);
+my $inf = Rmpfr_get_d($mpfr_inf, MPFR_RNDN);
+
+my $zero = Rmpfr_get_d(Math::MPFR->new(0), MPFR_RNDN);
+my $neg_zero = Rmpfr_get_d(Math::MPFR->new('-0.0'), MPFR_RNDN);
+
+for my $arg($dbl_max, $norm_min, $denorm_max, $inf, $zero, -$dbl_max, -$norm_min, -$denorm_max, -$inf, $neg_zero) {
+  cmp_ok(nvtoa($arg), '==', mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+  cmp_ok(nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
+}
 
 my($dd1, $dd2, $dd3, $dd4) = ( Math::FakeDD->new(2.01) ** -505, Math::FakeDD->new(2.01) ** -520,
                                Math::FakeDD->new(2.01) ** 505, Math::FakeDD->new(2.01) ** 520 );
@@ -88,10 +113,9 @@ sub mpfrtoa_subn { # obj, prec, emin, emax
   if($exp < ($_[2] + $places)) {
     # Value is subnormal.
     my $prec = $exp + 1 - $_[2];
-    #$prec++;
     my $mpfr_temp = Rmpfr_init2($prec);
     Rmpfr_set($mpfr_temp, $_[0], MPFR_RNDN);
-    return mpfrtoa($mpfr_temp);
+    return mpfrtoa($mpfr_temp, $_[1]); # Needs 2-arg form of mpfrtoa()
   }
 
   return mpfrtoa($_[0]);
