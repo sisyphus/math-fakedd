@@ -159,7 +159,7 @@ cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round
 
 ###############################################################################################
 
-for(1 .. 100) {
+for(1 .. 1000) {
   my $p1 = int(rand(1024));
   $p1 *= -1 if $_ % 2; # check for equal numbers of -ve and +ve powers
   my $p2 = $p1 - int(rand(52));
@@ -179,10 +179,12 @@ for(1 .. 100) {
   }
 
   $nu = dd_nextup($dd);
+  cmp_ok($nu, '>', $dd, "nextup >:$nu > $dd");
   cmp_ok($nu, '==', Math::FakeDD->new($first) + ($second) + Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextup(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) + (2 ** -1074)");
   cmp_ok($nu - $dd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$nu - $dd ok");  ## line 167
   $nd = dd_nextdown($dd);
+  cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd");
   cmp_ok($nd, '==', Math::FakeDD->new($first) + ($second) - Math::FakeDD::DBL_DENORM_MIN,
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
@@ -239,7 +241,7 @@ for(1 .. 100) {
 }
 ###############################################################################################
 
-for(1 .. 100) {
+for(1 .. 1000) {
   my $p1 = int(rand(1024));
   $p1 *= -1 if $_ % 2; # check for equal numbers of -ve and +ve powers
   my $p2 = $p1 - int(rand(52));
@@ -259,6 +261,8 @@ for(1 .. 100) {
 
   my $nu = dd_nextup($dd);
   my $nd = dd_nextdown($dd);
+  cmp_ok($nu, '>', $dd, "nextup >:$nu > $dd");
+  cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd");
 
   cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
   cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
@@ -303,7 +307,7 @@ for(@sf) { die "Bad string in \@sm" if length($_) != 51 }
 
 my $mpfr = Math::MPFR::Rmpfr_init2(2098);
 
-for(1..200) {
+for(1 .. 1000) {
   my $start = $ss[int(rand(scalar(@ss)))];
   substr($start, 1 + int(rand(53)), 0, '.'); # randomly insert a radix point.
   die "starting string is of wrong length" unless length($start) == 54;
@@ -321,6 +325,8 @@ for(1..200) {
   my $dd = mpfr2dd($mpfr);
   my $nu = dd_nextup($dd);
   my $nd = dd_nextdown($dd);
+  cmp_ok($nu, '>', $dd, "nextup >:$nu > $dd") unless dd_is_inf($dd);
+  cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd");
 
   cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
   unless(dd_is_inf($dd)) { # $dd could be +inf
@@ -330,6 +336,8 @@ for(1..200) {
   $dd *= -1;
   $nu = dd_nextup($dd);
   $nd = dd_nextdown($dd);
+  cmp_ok($nu, '>', $dd, "nextup >:$nu > $dd");
+  cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd") unless dd_is_inf($dd);
 
   unless(dd_is_inf($dd)) { # $dd could be -inf
     cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
@@ -350,7 +358,7 @@ for(@sf) { die "Bad string in \@sm" if length($_) != 51 }
 
 $mpfr = Math::MPFR::Rmpfr_init2(2098);
 
-for(1..200) {
+for(1 .. 1000) {
   my $start = $ss[int(rand(scalar(@ss)))];
   substr($start, 1 + int(rand(53)), 0, '.'); # randomly insert a radix point.
   die "starting string is of wrong length" unless length($start) == 54;
@@ -454,6 +462,35 @@ for(@probs) {
   cmp_ok($nd, '<', $dd, sprintx($nd) . ' < ' . sprintx($dd));
   $rt = dd_nextup($nd);
   cmp_ok($rt, '==', $dd, sprintx($rt) . ' == ' . sprintx($dd));
+}
+
+for(1..1000) {
+  my $e1 = int(rand(1074));
+  my $e2 = int(rand(1074));
+  my $init;
+
+  $e1 = -$e1 if $_ & 1;
+  $e2 = -$e2 if $_ & 3;
+
+  if($_ & 1) {
+    $dd = Math::FakeDD->new(rand() * (2 ** $e1)) + (rand() * (2 ** $e2));
+  }
+  else {
+    $dd = Math::FakeDD->new(rand() * (2 ** $e1)) + (rand() * (2 ** $e2));
+  }
+
+
+  my $nu = dd_nextup($dd);
+  my $nd = dd_nextdown($dd);
+
+  if($dd >= 0) {
+    cmp_ok($nu, '>', $dd, "nextup >:$nu > $dd") unless dd_is_inf($dd);
+    cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd");
+  }
+  else {
+    cmp_ok($nu, '>', $dd, "nextup >:$nu > $dd");
+    cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd") unless dd_is_inf($dd);
+  }
 }
 
 #################
