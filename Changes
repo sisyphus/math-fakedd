@@ -1,6 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
 1.02
+ - Fix printing (dd_stringify) for infinities.
  - Sanitize string returned by rand() in t/print.t.
  - Add t/subnormal.t.
 

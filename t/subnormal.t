@@ -7,12 +7,12 @@ use Math::FakeDD qw(:all);
 
 use Test::More;
 
-if($Config{nvsize} != 8 ) {
-  cmp_ok(1, '==', 1, 'dummy test');
-  warn "Skipping tests because nvsize is greater than 8";
-  done_testing();
-  exit 0;
-}
+#if($Config{nvsize} != 8 ) {
+#  cmp_ok(1, '==', 1, 'dummy test');
+#  warn "Skipping tests because nvsize is greater than 8";
+#  done_testing();
+#  exit 0;
+#}
 
 if($Math::MPFR::VERSION < 4.44 ) {
   cmp_ok(1, '==', 1, 'dummy test');
@@ -30,21 +30,23 @@ if(!Math::MPFR::MPFR_4_0_2_OR_LATER) {
 
 my @pow = (1023 .. 1074);
 
-for(1..500) {
-  my $arg = 0;
-  my $how_many = 2 + int(rand(10));
+if($Config{nvsize} == 8) {
+  for(1..500) {
+    my $arg = 0;
+    my $how_many = 2 + int(rand(10));
 
-  for(1 .. $how_many) {
-    $arg += 2 ** -($pow[int(rand(51))]);
+    for(1 .. $how_many) {
+      $arg += 2 ** -($pow[int(rand(51))]);
+    }
+    cmp_ok(Math::MPFR::nvtoa($arg), '==', Math::MPFR::mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+    cmp_ok(Math::MPFR::nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
   }
-  cmp_ok(Math::MPFR::nvtoa($arg), '==', Math::MPFR::mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
-  cmp_ok(Math::MPFR::nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
-}
 
-for my $arg(1.08646184497422e-311, 6.32404026676796e-322) {
-  # These will fail unless the 2-arg form of mpfrtoa() is called.
-  cmp_ok(Math::MPFR::nvtoa($arg), '==', Math::MPFR::mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
-  cmp_ok(Math::MPFR::nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
+  for my $arg(1.08646184497422e-311, 6.32404026676796e-322) {
+    # These will fail unless the 2-arg form of mpfrtoa() is called.
+    cmp_ok(Math::MPFR::nvtoa($arg), '==', Math::MPFR::mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+    cmp_ok(Math::MPFR::nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
+  }
 }
 
 my $dbl_max = 1.7976931348623157e+308;

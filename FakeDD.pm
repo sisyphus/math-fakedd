@@ -374,9 +374,9 @@ sub _chop_test {
   my @r = split /e/i, shift;
   my $op = shift;
 
-  # If $do_increment is set, then all we are not interested
+  # If $do_increment is set, then we are not interested
   # in the result of the chop test. We are interested in the
-  # result of the incrmentation - which we requires that we
+  # result of the incrmentation - which requires that we
   # first perform the chop.
 
   my $do_increment = defined($_[0]) ? shift
@@ -1405,6 +1405,15 @@ sub dd_stringify {
 
   return "[0.0 0.0]" if($self->{msd} == 0 && $self->{lsd} == 0); # Don't look at the exponent of a
                                                                  # Math::MPFR object whose value is 0.
+
+  # If $Config{nvsize} != 8, an assertion failure was making
+  # it difficult for this sub to work with infinities. So,
+  # we now simply detect the inf and return the appropriate
+  # string, irrespective of the value of $Config{nvsize}.
+  if(dd_is_inf($self)) {
+    return "[Inf 0.0]" if $self > 0;
+    return "[-Inf 0.0]";
+  }
   my($mpfrm, $mpfrl) = (Rmpfr_init2(53), Rmpfr_init2(53));
   Rmpfr_set_d($mpfrm, $self->{msd}, MPFR_RNDN);
   Rmpfr_set_d($mpfrl, $self->{lsd}, MPFR_RNDN);
