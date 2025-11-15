@@ -211,11 +211,11 @@ sub dd_repro {
     Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
     $Math::FakeDD::REPRO_PREC = $prec;
 
-    if(abs($arg->{msd}) <= 2 ** -348 && abs($arg->{msd}) >= 2 ** -1067) {
-      # Provide 2nd arg of 728 to mpfrtoa().
-      # 2 ** -348 (prec = 727) needs this.
-      return '-' . mpfrtoa($mpfr, 728) if $neg;
-      return mpfrtoa($mpfr, 728);
+    if($exp <= -347 && $exp >= -1066) {
+      # Provide 2nd arg of $prec+1 to mpfrtoa().
+      # For example, 2 ** -348 (prec = 727) needs this.
+      return '-' . mpfrtoa($mpfr, $prec + 1) if $neg;
+      return mpfrtoa($mpfr, $prec + 1);
     }
 
     return '-' . mpfrtoa($mpfr) if $neg;
