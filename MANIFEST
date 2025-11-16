@@ -19,6 +19,7 @@ t/new.t
 t/next.t
 t/overload.t
 t/print.t
+t/single_double.t
 t/sparse.t
 t/sqrt.t
 t/stringify.t

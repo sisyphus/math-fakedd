@@ -211,15 +211,8 @@ sub dd_repro {
     Rmpfr_prec_round($mpfr, $prec, MPFR_RNDN);
     $Math::FakeDD::REPRO_PREC = $prec;
 
-    if($exp <= -347 && $exp >= -1066) {
-      # Provide 2nd arg of $prec+1 to mpfrtoa().
-      # For example, 2 ** -348 (prec = 727) needs this.
-      return '-' . mpfrtoa($mpfr, $prec + 1) if $neg;
-      return mpfrtoa($mpfr, $prec + 1);
-    }
-
-    return '-' . mpfrtoa($mpfr) if $neg;
-    return mpfrtoa($mpfr);
+    return '-' . mpfrtoa($mpfr, $prec + 1) if $neg;
+    return mpfrtoa($mpfr, $prec + 1);
 
   } # close $arg->{lsd} == 0
 
@@ -324,11 +317,14 @@ sub dd_repro {
   } # close different signs
 
   # msd and lsd are either both >0, or both <0.
-  # We need to detect the (rare) case that a chopped and
+  # We need to detect the (rare) cases that a chopped and
   # then incremented mantissa passes the round trip.
+  # Two examples: [0x1p+200 0x1p-549] & [0x1.ffffffffffff8p+999 0x1p-549].
 
   my $can = mpfrtoa($mpfr); # was mpfrtoa($mpfr, 53) - apparently unnecessary
-  my $ret = _chop_test($can, $arg, 1);
+  my $ret = _chop_test($can, $arg, 1); # $ret will either be set to 'ok' (in which case
+                                       # we return $can), or $ret will be set to the
+                                       # correct value (in which case we return $ret).
 
   if($ret eq 'ok') {
     $Math::FakeDD::REPRO_PREC = $prec;
