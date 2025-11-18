@@ -77,7 +77,7 @@ $repro = dd_repro($ret);
 chop_inc_test($repro, $ret);
 #ok(Math::FakeDD::tz_test($repro) == 1, sprintx($ret));
 
-# [0xp1+1000 0]
+# [0xp1+1000]
 $ret = Math::FakeDD->new(2 ** 1000);
 $repro = dd_repro($ret);
 chop_inc_test($repro, $ret);
@@ -161,17 +161,22 @@ $repro = dd_repro($ret);
 chop_inc_test($repro, $ret);
 #ok(Math::FakeDD::tz_test($repro) == 1, sprintx($ret));
 
+my @exponents = (-1017, -1007, -957, -924, -921, -811, -808, -791, -788, -705, -695, -662, -652, -549,
+                 -509, -496, -489, -383, -366, -296, -140, -97, -77, -44, -24, 59, 69, 72, 79, 99, 129,
+                 109, 119, 132, 142);
 #[0x1p+200 -0x1p-549]
-$ret = Math::FakeDD->new(2 ** 200) - Math::FakeDD->new(2 ** -549);
-$repro = dd_repro($ret);
-chop_inc_test($repro, $ret);
-#ok(Math::FakeDD::tz_test($repro) == 1, sprintx($ret));
+for my $exponent (@exponents) {
+  $ret = Math::FakeDD->new(2 ** 200) - Math::FakeDD->new(2 ** $exponent);
+  $repro = dd_repro($ret);
+  chop_inc_test($repro, $ret);
+  #ok(Math::FakeDD::tz_test($repro) == 1, sprintx($ret));
 
 # [0x1.ffffffffffff8p+999 0x1p-549]
-$ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') + Math::FakeDD->new(2 ** -549);
-$repro = dd_repro($ret);
-chop_inc_test($repro, $ret);
-#ok(Math::FakeDD::tz_test($repro) == 1, sprintx($ret));
+  $ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') + Math::FakeDD->new(2 ** $exponent);
+  $repro = dd_repro($ret);
+  chop_inc_test($repro, $ret);
+  #ok(Math::FakeDD::tz_test($repro) == 1, sprintx($ret));
+}
 
 # [0x1.ffffffffffff8p+999 -0x1p-549]
 $ret = Math::FakeDD->new('0x1.ffffffffffff8p+999') - Math::FakeDD->new(2 ** -549);
