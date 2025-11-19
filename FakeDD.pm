@@ -319,23 +319,27 @@ sub dd_repro {
   # msd and lsd are either both >0, or both <0.
   # We need to detect the (rare) cases that a chopped and
   # then incremented mantissa passes the round trip.
+  # AFAIK, this can happen only if the LSD is a power of 2.
   # Two examples: [0x1p+200 0x1p-549] & [0x1.ffffffffffff8p+999 0x1p-549].
 
-  my $can = mpfrtoa($mpfr); # was mpfrtoa($mpfr, 53) - apparently unnecessary
-  my $ret = _chop_test($can, $arg, 1); # $ret will either be set to 'ok' (in which case
-                                       # we return $can), or $ret will be set to the
-                                       # correct value (in which case we return $ret).
+  my $can = mpfrtoa($mpfr); # $can is set to the proposed return string.
+  use POSIX;
+  my @frexp = POSIX::frexp($arg->{lsd});
+  if(abs($frexp[0]) == 0.5) {            # LSD is power of 2.
+    my $ret = _chop_test($can, $arg, 1); # $ret will either be set to 'ok' (in which case
+                                         # we return $can), or $ret will be set to the
+                                         # correct value (in which case we return $ret).
 
-  if($ret eq 'ok') {
-    $Math::FakeDD::REPRO_PREC = $prec;
-    return '-' . $can if $neg;
-    return $can;
+    unless($ret eq 'ok') {
+      $Math::FakeDD::REPRO_PREC = "> $prec";
+      return '-' . $ret if $neg;
+      return $ret;
+    }
   }
 
-  $Math::FakeDD::REPRO_PREC = "> $prec";
-  return '-' . $ret if $neg;
-  return $ret;
-
+  $Math::FakeDD::REPRO_PREC = $prec;
+  return '-' . $can if $neg;
+  return $can;
 }
 
 sub _decrement {
