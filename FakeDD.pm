@@ -70,6 +70,7 @@ use overload
 
 require Exporter;
 *import = \&Exporter::import;
+require DynaLoader;
 
 my $v = MPFR_VERSION_MAJOR;
 if($v < 4) {
@@ -102,6 +103,9 @@ my @tags = qw(
 %Math::FakeDD::EXPORT_TAGS = (all => [@tags]);
 
 $Math::FakeDD::VERSION =  '1.02';
+Math::FakeDD->DynaLoader::bootstrap($Math::FakeDD::VERSION);
+
+sub dl_load_flags {0} # Prevent DynaLoader from complaining and croaking
 
 # Whenever dd_repro($obj) returns its string representation of
 # the value of $obj, $Math::FakeDD::REPRO_PREC is set to the
@@ -319,13 +323,12 @@ sub dd_repro {
   # msd and lsd are either both >0, or both <0.
   # We need to detect the (rare) cases that a chopped and
   # then incremented mantissa passes the round trip.
-  # AFAIK, this can happen only if the LSD is a power of 2.
+  # AFAIK, this can happen only if the LSD is an integer power of 2.
   # Two examples: [0x1p+200 0x1p-549] & [0x1.ffffffffffff8p+999 0x1p-549].
 
-  my $can = mpfrtoa($mpfr); # $can is set to the proposed return string.
-  use POSIX;
-  my @frexp = POSIX::frexp($arg->{lsd});
-  if(abs($frexp[0]) == 0.5) {            # LSD is power of 2.
+  my $can = mpfrtoa($mpfr);
+  my @frexp = dd_frexp($arg->{lsd});
+  if(abs($frexp[0]) == 0.5) {            # LSD is an integer power of 2.
     my $ret = _chop_test($can, $arg, 1); # $ret will either be set to 'ok' (in which case
                                          # we return $can), or $ret will be set to the
                                          # correct value (in which case we return $ret).

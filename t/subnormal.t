@@ -9,12 +9,12 @@ use Test::More;
 
 my @subn_args = (53, -1073, 1024);
 
-if($Math::MPFR::VERSION < 4.44 ) {
-  cmp_ok(1, '==', 1, 'dummy test');
-  warn "Skipping tests because Math::MPFR version ($Math::MPFR::VERSION) needs to be at 4.44 or greater";
-  done_testing();
-  exit 0;
-}
+#if($Math::MPFR::VERSION < 4.44 ) {
+#  cmp_ok(1, '==', 1, 'dummy test');
+#  warn "Skipping tests because Math::MPFR version ($Math::MPFR::VERSION) needs to be at 4.44 or greater";
+#  done_testing();
+#  exit 0;
+#}
 
 if(!Math::MPFR::MPFR_4_0_2_OR_LATER) {
   cmp_ok(1, '==', 1, 'dummy test');

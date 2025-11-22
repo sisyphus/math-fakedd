@@ -2,6 +2,7 @@ MANIFEST
 Changes
 FakeDD.pm
 FakeDD.pod
+FakeDD.xs
 Makefile.PL
 README
 
