@@ -435,8 +435,8 @@
    being passed to frexp(). The returned $nv has therefore also
    been calculated to double precision.
    This function is provided mainly for internal use (in dd_repro)
-   so that we can easily determine whether $obj->{lsd} is an
-   integer power of 2. It is not exported.
+   so that we can easily determine whether $obj->{lsd} or
+   $obj->{msd} is an integer power of 2.
 
   $obj = dd_inf([$iv]); # $iv is an optional arg.
 

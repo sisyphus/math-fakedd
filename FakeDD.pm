@@ -87,7 +87,7 @@ if($v < 4) {
 my @tags = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
   dd_abs dd_add dd_add_eq dd_assign dd_atan2 dd_catalan dd_cmp dd_clone dd_copy dd_cos dd_dec
-  dd_div dd_div_eq dd_dump dd_eq dd_euler dd_exp dd_exp2 dd_exp10
+  dd_div dd_div_eq dd_dump dd_eq dd_euler dd_exp dd_exp2 dd_exp10 dd_frexp
   dd_gt dd_gte dd_hex dd_inf dd_is_inf dd_is_nan dd_int dd_log dd_log2 dd_log10 dd_lt dd_lte
   dd_mul dd_mul_eq dd_nan dd_neq
   dd_nextup dd_nextdown dd_numify dd_pi dd_pow dd_pow_eq dd_repro dd_repro_test
@@ -233,7 +233,8 @@ sub dd_repro {
     # lsd is not subnormal.
     $prec = Rmpfr_get_exp($m_msd) - Rmpfr_get_exp($m_lsd) + 53;
     if( ($arg->{lsd} < 0 && $arg->{msd} > 0) || ($arg->{msd} < 0 && $arg->{lsd} > 0) ) {
-      $prec--;
+      # $prec--; # originally, an *unqualified* decrement.
+      $prec-- if abs( (dd_frexp($arg->{msd}))[0] ) == 0.5;      # MSD is a power of 2
       $different_signs = 1; # one double < 0, the other > 0
     }
     my $mpfr_copy = Rmpfr_init2(2098);
@@ -327,8 +328,8 @@ sub dd_repro {
   # Two examples: [0x1p+200 0x1p-549] & [0x1.ffffffffffff8p+999 0x1p-549].
 
   my $can = mpfrtoa($mpfr);
-  my @frexp = dd_frexp($arg->{lsd});
-  if(abs($frexp[0]) == 0.5) {            # LSD is an integer power of 2.
+  #my @frexp = dd_frexp($arg->{lsd});
+  if(abs( (dd_frexp($arg->{lsd}))[0]) == 0.5) {     # LSD is an integer power of 2.
     my $ret = _chop_test($can, $arg, 1); # $ret will either be set to 'ok' (in which case
                                          # we return $can), or $ret will be set to the
                                          # correct value (in which case we return $ret).

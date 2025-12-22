@@ -64,6 +64,17 @@ for(1 .. 1000) {
   cmp_ok(dd_hex(Math::FakeDD->new($hex)), '==', $n, "dd_hex() ok with '$str'");
 }
 
+{
+my $str = '0.299155617363080494897076277993619e4';
+my $dd = Math::FakeDD->new('0.299155617363080494897076277993619e4'); # [0xb.af8e616523348p+8 -0x8p-47]
+                                                                     # or (equivalently)
+                                                                     # [0x1.75f1cc2ca4669p+11 -0x1p-44]
+cmp_ok(dd_repro_test(dd_repro($dd), $dd), '==', 15, "dd_repro_test passes for $dd"); # 0xb.af8e616523347p+8
+
+my $hex = dd_hex($dd);
+cmp_ok(dd_hex(Math::FakeDD->new($hex)), '==', $dd, "dd_hex() ok with '$str'");
+}
+
 done_testing();
 
 sub is_same_as {
