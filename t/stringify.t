@@ -3,7 +3,7 @@ use warnings;
 use Math::FakeDD qw(:all);
 use Test::More;
 
-#cmp_ok($Math::FakeDD::VERSION, '==', 1.02, "Version number is correct"); # Not needed here - checked in new.t
+#cmp_ok($Math::FakeDD::VERSION, '==', 1.03, "Version number is correct"); # Not needed here - checked in new.t
 
 my $obj = Math::FakeDD->new();
 

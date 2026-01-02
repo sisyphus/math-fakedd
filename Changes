@@ -1,5 +1,7 @@
 Revision history for Perl module Math::FakeDD
 
+1.03
+
 1.02
  - Add dd_frexp function (mainly for use in dd_repro - but export it, anyway).
  - Fix printing (dd_stringify) for infinities.
