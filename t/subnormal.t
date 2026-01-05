@@ -23,6 +23,8 @@ if(!Math::MPFR::MPFR_4_0_2_OR_LATER) {
   exit 0;
 }
 
+*_atonv = \&Math::MPFR::atonv;
+
 my @pow = (1023 .. 1074);
 
 # Skip these tests unless NVSIZE is 8.
@@ -36,13 +38,28 @@ if($Config{nvsize} == 8) {
     for(1 .. $how_many) {
       $arg += 2 ** -($pow[int(rand(51))]);
     }
-    cmp_ok(Math::MPFR::nvtoa($arg), '==', Math::MPFR::mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+
+    if($] < 5.03) {
+      # Perl's assignment to NV is not reliable - so use Math::MPFR::atonv() instead.
+      cmp_ok(_atonv(Math::MPFR::nvtoa($arg)), '==', _atonv(Math::MPFR::mpfrtoa(Math::MPFR->new($arg))), "$arg - strings numify equivalently");
+    }
+    else {
+      cmp_ok(Math::MPFR::nvtoa($arg), '==', Math::MPFR::mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+    }
+
     cmp_ok(Math::MPFR::nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
+
   }
 
   for my $arg('1.08646184497422e-311', '6.32404026676796e-322') {
-    # These will fail unless the 2-arg form of mpfrtoa() is called.
-    cmp_ok(Math::MPFR::nvtoa($arg), '==', Math::MPFR::mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+    if($] < 5.03) {
+      # Perl's assignment to NV is not reliable - so use Math::MPFR::atonv() instead.
+      cmp_ok(_atonv(Math::MPFR::nvtoa($arg)), '==', _atonv(Math::MPFR::mpfrtoa(Math::MPFR->new($arg))), "$arg - strings numify equivalently");
+    }
+    else {
+      cmp_ok(Math::MPFR::nvtoa($arg), '==', Math::MPFR::mpfrtoa       (Math::MPFR->new($arg)), "$arg - strings numify equivalently");
+    }
+
     cmp_ok(Math::MPFR::nvtoa($arg), 'eq', mpfrtoa_subn(Math::MPFR->new($arg), 53, -1073, 1024), "$arg - strings are identical");
   }
 }
