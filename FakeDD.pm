@@ -329,12 +329,12 @@ sub dd_repro {
   # AFAIK, this can happen only if the LSD is an integer power of 2.
   # Two examples: [0x1p+200 0x1p-549] & [0x1.ffffffffffff8p+999 0x1p-549].
 
-  my $can = mpfrtoa($mpfr);
+  my $candidate = mpfrtoa($mpfr);
   #my @frexp = dd_frexp($arg->{lsd});
-  if(abs( (dd_frexp($arg->{lsd}))[0]) == 0.5) {     # LSD is an integer power of 2.
-    my $ret = _chop_test($can, $arg, 1); # $ret will either be set to 'ok' (in which case
-                                         # we return $can), or $ret will be set to the
-                                         # correct value (in which case we return $ret).
+  if(abs( (dd_frexp($arg->{lsd}))[0]) == 0.5) {  # LSD is an integer power of 2.
+    my $ret = _chop_test($candidate, $arg, 1); # $ret will either be set to 'ok' (in which case
+                                               # we return $candidate), or $ret will be set to
+                                               # the correct value (in which case we return $ret).
 
     unless($ret eq 'ok') {
       $Math::FakeDD::REPRO_PREC = "> $prec";
@@ -344,8 +344,8 @@ sub dd_repro {
   }
 
   $Math::FakeDD::REPRO_PREC = $prec;
-  return '-' . $can if $neg;
-  return $can;
+  return '-' . $candidate if $neg;
+  return $candidate;
 }
 
 sub _decrement {
