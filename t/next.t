@@ -92,8 +92,8 @@ cmp_ok($nd, '==', Math::FakeDD->new(2 **-1022),
                  "dd_nextdown(2 ** -1022) + (2 ** -1074)) == (2 ** -1022)");
 cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
 
-cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 1)");
+cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 1)");
 
 $dd = Math::FakeDD->new(-(2 ** -1022)) - (2 ** -1074);
 # [-2.225073858507202e-308 0.0]
@@ -112,8 +112,8 @@ cmp_ok($nd, '==', Math::FakeDD->new(-(2 **-1022)) - (2 ** -1073),
                  "dd_nextdown(-(2 ** -1022)) - (2 ** -1074)) == -(2 ** -1022) - (2 ** -1073)");
 cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
 
-cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 2)");
+cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 2)");
 
 ###############################################################################################
 ###############################################################################################
@@ -134,8 +134,8 @@ cmp_ok($nd, '==', Math::FakeDD->new(2 **-1000) + (2 ** -1052) - Math::FakeDD::DB
                  "dd_nextdown(2 ** -1000) + (2 ** -1052)) == (2 ** -1000) + (2 ** -1052) -(2 ** -1074)");
 cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
 
-cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 3)");
+cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 3)");
 
 $dd = Math::FakeDD->new(-(2 ** -1000)) - (2 ** -1052);
 # [-9.33263618503219e-302 0.0]
@@ -154,8 +154,8 @@ cmp_ok($nd, '==', Math::FakeDD->new(-(2 **-1000)) - (2 ** -1052)  - Math::FakeDD
                  "dd_nextdown(-(2 ** -1000)) - (2 ** -1052)) == -(2 ** -1000) - (2 ** -1052) -(2 ** -1074)");
 cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
 
-cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 4)");
+cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip group 4)");
 
 ###############################################################################################
 
@@ -189,8 +189,8 @@ for(1 .. 1000) {
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 5)");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 5)");
 
   $first  *= -1;
 
@@ -204,8 +204,8 @@ for(1 .. 1000) {
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 6)");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 6)");
 
   $second *= -1;
 
@@ -220,8 +220,8 @@ for(1 .. 1000) {
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 7)");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 7)");
 
   $first *= -1;
 
@@ -235,8 +235,8 @@ for(1 .. 1000) {
                    "dd_nextdown(2**$p1) + (2**$p2)) == (2**$p1) + (2**$p2) -(2 ** -1074)");
   cmp_ok($dd - $nd, '==', Math::FakeDD->new(2 ** ulp_exponent($dd)), "$dd - $nd ok");
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 8)");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 8)");
 
 }
 ###############################################################################################
@@ -261,11 +261,27 @@ for(1 .. 1000) {
 
   my $nu = dd_nextup($dd);
   my $nd = dd_nextdown($dd);
+
+  if(dd_is_inf($dd)) {
+    if($dd > 0) {
+      cmp_ok($nu, '>', 0, "next up from +Inf is +ve");
+      cmp_ok(dd_is_inf($nu), '==', 1, "next up from +Inf is an Inf");
+
+      cmp_ok($nd, '==', $Math::FakeDD::DD_MAX, "next down from +Inf is $Math::FakeDD::DD_MAX");
+      next;
+    }
+
+    cmp_ok($nd, '<', 0, "next down from -Inf is -ve");
+    cmp_ok(dd_is_inf($nd), '==', 1, "next down from -Inf is an Inf");
+
+    cmp_ok($nu, '==', -$Math::FakeDD::DD_MAX, "next up from -Inf is -$Math::FakeDD::DD_MAX");
+    next;
+  }
   cmp_ok($nu, '>', $dd, "nextup >:$nu > $dd");
   cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd");
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 9)");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 9)");
 
   $dd1 *= -1;
 
@@ -273,8 +289,8 @@ for(1 .. 1000) {
   $nu = dd_nextup($dd);
   $nd = dd_nextdown($dd);
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 10)");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 10)");
 
   $dd2 *= -1;
 
@@ -282,8 +298,8 @@ for(1 .. 1000) {
   $nu = dd_nextup($dd);
   $nd = dd_nextdown($dd);
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 11)");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip group 11)");
 
   $dd1 *= -1;
 
@@ -291,8 +307,8 @@ for(1 .. 1000) {
   $nu = dd_nextup($dd);
   $nd = dd_nextdown($dd);
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 12)");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 12)");
 }
 ###############################################################################################
 
@@ -317,20 +333,19 @@ for(1 .. 1000) {
   my $mantissa = $start . $middle . $finish;
   my $exp = $_ % 2 ? 'p+' . int(rand(1024))
                    : 'p-' . int(rand(1075));
-
   my $binstring = $mantissa . $exp;
 
   Math::MPFR::Rmpfr_strtofr($mpfr, $binstring, 2, 0);
-
   my $dd = mpfr2dd($mpfr);
   my $nu = dd_nextup($dd);
   my $nd = dd_nextdown($dd);
+
   cmp_ok($nu, '>', $dd, "nextup >:$nu > $dd") unless dd_is_inf($dd);
   cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd");
 
-  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 13)");
   unless(dd_is_inf($dd)) { # $dd could be +inf
-    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 13)");
   }
 
   $dd *= -1;
@@ -340,9 +355,9 @@ for(1 .. 1000) {
   cmp_ok($nd, '<', $dd, "nextdown <:$nd < $dd") unless dd_is_inf($dd);
 
   unless(dd_is_inf($dd)) { # $dd could be -inf
-    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 14)");
   }
-  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+  cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 14)");
 }
 
 ###############################################################################################
@@ -392,10 +407,10 @@ for(1 .. 1000) {
   $nd = dd_nextdown($dd);
 
   unless($dd < 0 && dd_is_inf($dd)) {
-    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextup($nd), "up-down " . sprintx($dd) . " survives round_trip (group 15)");
   }
   unless($dd > 0 && dd_is_inf($dd)) {
-    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip");
+    cmp_ok($dd, '==', dd_nextdown($nu), "down-up " . sprintx($dd) . " survives round_trip (group 15)");
   }
 }
 
