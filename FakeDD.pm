@@ -331,7 +331,8 @@ sub dd_repro {
 
   my $candidate = mpfrtoa($mpfr);
   #my @frexp = dd_frexp($arg->{lsd});
-  if(abs( (dd_frexp($arg->{lsd}))[0]) == 0.5) {  # LSD is an integer power of 2.
+  if(abs( (dd_frexp($arg->{lsd}))[0]) == 0.5) { # LSD is an integer power of 2.
+
     my $ret = _chop_test($candidate, $arg, 1); # $ret will either be set to 'ok' (in which case
                                                # we return $candidate), or $ret will be set to
                                                # the correct value (in which case we return $ret).
