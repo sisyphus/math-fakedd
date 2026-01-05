@@ -74,6 +74,7 @@ require DynaLoader;
 
 my $v = MPFR_VERSION_MAJOR;
 if($v < 4) {
+  $Math::FakeDD::MPFR_PREC_MIN = 2;
   warn "
   This module requires that Math::MPFR was built against version 4
   of the mpfr C library. You have only ", Rmpfr_get_version, ".\n",
@@ -83,6 +84,7 @@ if($v < 4) {
   The need to use a 1-bit precision value is fairly limited, so
   we'll go ahead anyway. You have been warned !!\n";
 }
+else {   $Math::FakeDD::MPFR_PREC_MIN = 1 }
 
 my @tags = qw(
   NV_IS_DOUBLE NV_IS_DOUBLEDOUBLE NV_IS_QUAD NV_IS_80BIT_LD MPFR_LIB_VERSION
