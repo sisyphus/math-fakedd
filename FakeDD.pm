@@ -104,7 +104,7 @@ my @tags = qw(
 
 %Math::FakeDD::EXPORT_TAGS = (all => [@tags]);
 
-$Math::FakeDD::VERSION =  '1.03';
+$Math::FakeDD::VERSION =  '1.04';
 Math::FakeDD->DynaLoader::bootstrap($Math::FakeDD::VERSION);
 
 sub dl_load_flags {0} # Prevent DynaLoader from complaining and croaking
